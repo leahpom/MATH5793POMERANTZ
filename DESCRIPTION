@@ -11,3 +11,4 @@ Encoding: UTF-8
 LazyData: true
 URL: https://github.com/leahpom/MATH5793POMERANTZ
 BugReports: https://github.com/leahpom/MATH5793POMERANTZ/issues
+RoxygenNote: 7.1.1
