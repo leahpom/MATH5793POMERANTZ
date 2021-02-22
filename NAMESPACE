@@ -2,3 +2,4 @@
 
 export(bookSD)
 export(myfirstfun)
+export(shiny_rot)

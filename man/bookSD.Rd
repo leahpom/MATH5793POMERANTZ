@@ -2,7 +2,7 @@
 % Please edit documentation in R/bookSD.R
 \name{bookSD}
 \alias{bookSD}
-\title{Title}
+\title{Book Standard Deviation}
 \usage{
 bookSD(x, n)
 }
@@ -15,7 +15,7 @@ bookSD(x, n)
 standard deviation from the biased formula
 }
 \description{
-Title
+Book Standard Deviation
 }
 \examples{
 x = 1:10

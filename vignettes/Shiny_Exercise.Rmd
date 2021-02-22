@@ -1,0 +1,114 @@
+---
+title: "Shiny_Exercise"
+output: 
+  prettydoc::html_pretty:
+    theme: hpstr
+    highlight: github
+    math: katex
+    df_print: paged
+    toc: yes
+    toc_depth: 4
+vignette: >
+  %\VignetteIndexEntry{Shiny_Exercise}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(MATH5793POMERANTZ)
+```
+
+# Purpose
+
+The purpose of this vignette is to give a more detailed description of my app and to examine the underlying theory behind it.
+
+# Shiny App
+
+## Overall
+
+In the broadest sense, my app takes user input and uses it to create graphs, several features of which are controlled by the user. Specifically, the first thing the user does is upload a data set. This data set *must* be a .csv and *must* have at least two continuous variables. After the data set has been uploaded, the user selects which columns of data their variables of interest are. The default is set to the first two columns of the data frame. The user can update this as they wish.
+The first output is a table. It's a the first six entries of the uploaded data set, which allows the user to check that they have uploaded the correct data.
+Two graphs are also output. The first one is an interactive scatterplot. When the user clicks a point, it shows the drop-1 correlation for the points (the correlation with the clicked point dropped). The user can also update the axes labels, the size of the points, and the color of the points (using hexadecimal code).
+The second graph is for the user to interact with and observe how the correlation changes as the axes are rotated by angle theta (input by the user). It also calculates the sample correlation based on the selected theta. The user can select how long the rotated axes should be and their color (using hexadecimal code). The uniroot() function is also used to calculate the theta value at which correlation is zero (rounded to four decimal places). The user can then set the theta input to this value and observe what the axes look like.
+
+## Inputs
+
+The direct inputs are:
+
+1. Data
+1. Column of the first variable
+1. Column of the second variable
+1. Hexadecimal color number for the scatterplot of graph one
+1. Size of the points for graph one
+1. Label for the x-axis (both graphs)
+1. Label for the y-axis (both graphs)
+1. Click from the user on the first graph for drop-1 correlation
+1. Theta value for rotation (used on second graph for the axis rotation and the correlation)
+1. Length ("radius") of the rotated axes for the second graph
+1. Color of the rotated axes for the second graph using hexadecimal color numbers
+
+## Outputs
+
+The direct outputs are:
+
+1. Table showing the first six entries of the data set
+1. Scatterplot with color, point size, and labels all changeable by user input
+1. Drop-1 correlation for the first plot based on dropping the point clicked by the user
+1. Scatterplot showing the rotated axes based on the theta input with and labels changeable by user input
+1. Sample correlation based on entered theta value
+1. The first quadrant theta solution using the uniroot() function
+
+## Running the app
+
+To run the app, all the user has to do is load the library and call the function, as shown below:
+
+```{r eval=FALSE}
+library(MATH5793POMERANTZ)
+shiny_rot()
+```
+
+
+# Underlying Theory
+
+To understand the point in making this shiny app, I'll briefly explain some of the theory behind it.
+
+## The Rotation Matrix
+
+The reason for a rotation matrix comes from the desire to understand the distance between our points. Statistical distance is a fundamental concept to multivariate statistical analysis. The problem is that our basic approach to statistical distance assumes that our points are independent; that is, the measurements on our variables are independent of each other. If this assumption is violated, then our measure of statistical distance is not meaningful. But, we can rotate our axes by angle $\theta$ so that our points are independent of each other, i.e. they have a correlation of zero. This means that we then *do* have a meaningful way to measure statistical distance. The way we do this is that, instead of having axes $x_1, x_2$, we have axes $\tilde{x}_1, \tilde{x}_2$. The relationship between $x_1, x_2$ and $\tilde{x}_1, \tilde{x}_2$ is defined by the formulae: 
+
+$\tilde{x}_1 = x_1\cos(\theta) + x_2\sin(\theta)$
+
+$\tilde{x}_2 = -x_1\sin(\theta) + x_2\cos(\theta)$
+
+We're then interested in the correlation between the points. This is found in the covariance matrix. With the new axes, this means that we want to find $\tilde{s}_{12}$. Using the equations for $\tilde{s}_1$ and $\tilde{x}_2$, as well as some trigonometric properties and substitutions, we get the following formula for $\tilde{s}_{12}$:
+
+$\tilde{s}_{12} = \cos(\theta)\sin(\theta)(s_{22} - s_{11}) + s_{12}\cos(2\theta)$
+
+In order for the correlation between the points to be zero, we want $\tilde{s}_{12}$ to be zero. This is a sinusoidal equation, so, for any data set, there are an infinite number of values for $\theta$ that can make the equation equal zero. Typically, we want the first quadrant solution. That is also what was specifically asked for in this assignment, so we found it using the uniroot() function. The way this was calculated is explained below.
+
+## Using our equation
+
+We have our equation for $\tilde{s}_{12}$ above. The $s_{11}$, $s_{12}$, and $s_{22}$ are based on the data. Since we are using the unbiased formula for the covariance matrix (dividing by (n-1) instead of just n), this means that we can calculate our values from our data using the following R function:
+
+```{r eval=FALSE}
+S <- cov(X)
+```
+
+where $X$ is the matrix of our data. We then take the $\theta$ from our user input. The first thing we do is use the transformation to output what the sample correlation is, based on what $\theta$ is. But we also tell the user what the first quadrant solution is, i.e., what value of $\theta$ in the interval $\big(0, \frac{\pi}{2}\big)$ will zero the function. We calculate our  $s_{11}$, $s_{12}$, and $s_{22}$ based on the data. We then create a function of theta using these values and input it to the uniroot() function. This gives us our desired output. The $\theta$ value is then printed for the user to look at.
+
+
+
+
+
+
+
+
+
+

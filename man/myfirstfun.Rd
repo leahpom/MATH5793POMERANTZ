@@ -2,7 +2,7 @@
 % Please edit documentation in R/myfirstfun.R
 \name{myfirstfun}
 \alias{myfirstfun}
-\title{Title}
+\title{My first function}
 \usage{
 myfirstfun(x)
 }
@@ -13,7 +13,7 @@ myfirstfun(x)
 a vector of squared components
 }
 \description{
-Title
+My first function
 }
 \examples{
 y <- 1:10

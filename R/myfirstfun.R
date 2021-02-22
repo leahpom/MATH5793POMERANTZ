@@ -1,4 +1,4 @@
-#' Title
+#' My first function
 #'
 #' @param x a vector of quantitative data
 #'

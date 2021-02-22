@@ -1,4 +1,4 @@
-#' Title
+#' Book Standard Deviation
 #'
 #' @param x a vector of quantitative data
 #' @param n the number of observations in the vector
