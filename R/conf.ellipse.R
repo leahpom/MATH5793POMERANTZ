@@ -33,6 +33,7 @@
 conf.ellipse <- function(data, alpha, mu_0){ # data is a two-vector data frame
   # 1 - alpha is the confidence level
   # mu_0 is the vector of means for the null hypothesis
+  quad.form <- NULL # attempt to fix error of "no visible binding for global variable" from check
 
   # Check before the function executes - make sure everything is in the right form
 
