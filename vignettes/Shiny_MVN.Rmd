@@ -166,4 +166,12 @@ The QQ-Plot helps the user see how well the Box-Cox transformation has transform
 
 # Running the app
 
+To run the app, load the library and call the function for the app:
+
+
+```{r eval=FALSE}
+library(MATH5793POMERANTZ)
+shiny_MVN()
+```
+
 
