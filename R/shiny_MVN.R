@@ -32,10 +32,11 @@
 #' @return A table showing the generalized distances and critical value for the selected column of data, where the displayed rows are from user input
 #' @return A chi-square plot for the selected column of data
 #' @return A table showing the standardized z-values for each column, where the displayed rows are from user input
+#' @return An updated chi-square plot for the selected column of data where points greater than the upper fifth quantile are colored red
 #' @return A plot showing the scatterplot and marginal dotplots for the user-selected columns of data
 #' @return A plot showing the l(\eqn{\lambda}) vs. \eqn{\lambda} to help the user select a good \eqn{\lambda} value
 #' @return A QQ-plot of the Box-Cox transformed data, which is clickable
-#' @return A QQ-plot for the Box-Cox transformed data, calcualted having dropped the clicked point from the previous graph
+#' @return A QQ-plot for the Box-Cox transformed data, calculated having dropped the clicked point from the previous graph
 #'
 #' @section User Input:
 #'

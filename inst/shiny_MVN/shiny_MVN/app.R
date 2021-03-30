@@ -74,10 +74,15 @@ ui <- fluidPage(
                       "Enter the consecutive rows of the Standardized Values table, separated by a comma",
                       value = "1,10"),
 
+            # allows the user to enter a range of values for the Box-Cox transformation
+            textInput("rlamb",
+                      "Enter the range of lambda values for the Box-Cox transformation, separated by a comma",
+                      value = "0,1"),
+
             # allows the user to have a dynamic lambda for the plot
-            sliderInput("lambda",
-                        "Enter the lambda for Box-Cox Transformation",
-                        -2, 2, 0.3, step = 0.1),
+            textInput("lambda",
+                      "Enter the specific lambda value for the Box-Cox transformation, up to four decimal places",
+                      value = "0.5"),
 
             # allows the user to select what column they want to use for the Box-Cox transformation
             textInput("boxcox", # the input name to reference in app
@@ -117,9 +122,12 @@ ui <- fluidPage(
 
             plotOutput("llambda"), # a plot of the l(lambda) Box-Cox transformation
 
+            verbatimTextOutput("bcshapWilk"), # text to show the p-value from the Shapiro-Wilk Test on BC data
+
             plotOutput("qqplotS", click = "plotClick"), # the ggplot object that will appear, SHOULD BE CLICKABLE
 
             plotOutput("qqplotDrop"), # the qqplot that should come as a result of clicking on the previous plot
+
 
         )
     )
@@ -348,7 +356,7 @@ server <- function(input, output, session) {
         xBar <- colMeans(df)
         S <- cov(df)
         Sinv <- solve(S)
-        compValue <- qchisq(0.01, 2, lower.tail = FALSE) # the value to compare distances to
+        compValue <- qchisq(input$alpha, 2, lower.tail = FALSE) # the value to compare distances to CHANGED HERE
 
         gd <- rep(0, nrow(df)) # create a vector to hold the generalized distances
 
@@ -538,33 +546,68 @@ server <- function(input, output, session) {
         g
     })
 
-    # output$llambda <- renderPlot({
-    #     # get the data
-    #     req(input$file) # gets an annoying error to go away
-    #     #get the data available for use
-    #     df <- if(!is.null(input$file)){
-    #         as.data.frame(read.csv(input$file$datapath, stringsAsFactors = FALSE))
-    #     }
-    #     xNum <- if(!is.null(input$boxcox)){
-    #         as.numeric(input$boxcox) # turn the input into a number to help the subsetting
-    #     }
-    #     xCol <- df[, xNum] # pull first column from the input
-    #     df <- data.frame(xCol) # the variable as a data.frame
-    #
-    #     # get lambda
-    #     lambda <- input$lambda
-    #
-    #     # transform data
-    #     x_lamb <- box_cox(x = df[,1], lambda = lambda)
-    #
-    #     # xBar-lambda
-    #     xBar_lamb <- mean(x_lamb)
-    #
-    #     # l(lambda) function
-    #
-    #
-    #     # plot
-    # })
+    output$llambda <- renderPlot({
+        # get the data
+        req(input$file) # gets an annoying error to go away
+        #get the data available for use
+        df <- if(!is.null(input$file)){
+            as.data.frame(read.csv(input$file$datapath, stringsAsFactors = FALSE))
+        }
+        xNum <- if(!is.null(input$boxcox)){
+            as.numeric(input$boxcox) # turn the input into a number to help the subsetting
+        }
+        xCol <- df[, xNum] # pull first column from the input
+        df <- data.frame(xCol) # the variable as a data.frame
+
+        # get lambda
+        user_lambda <- as.numeric(input$lambda)
+        user_lambda <- round(user_lambda, digits = 4) # round to four decimal places, just in case
+
+        # get lambda range
+        intBounds <- as.character(input$rlamb)
+        commaLoc <- stri_locate_first(pattern = ",", intBounds, fixed = TRUE) # find where the comma is
+        end <- commaLoc - 1 # where first row number ends
+        lower.bound <- as.numeric(substr(intBounds, 1, end))
+        begin <- commaLoc + 1 # where second row number begins
+        upper.bound <- as.numeric(substr(intBounds, begin, nchar(intBounds)))
+
+        # create lambda vector
+        lambda_vector <- seq(lower.bound, upper.bound, by = 0.0001)
+
+        # transform data
+        l_lamb <- l_lambda(df[,1], lambda_vector)
+        data <- data.frame(cbind(lambda_vector, l_lamb))
+        spec_val <- filter(data, lambda_vector == user_lambda) # specific value to add as a point - from user input
+
+        # plot
+        g <- ggplot(data = data, aes(x = lambda_vector, y = l_lamb)) + geom_line() + geom_point() +
+            geom_point(aes(x = spec_val$lambda_vector, y = spec_val$l_lamb, colour = "red"))
+        g
+    })
+
+    output$bcshapWilk <- renderText({
+        # get the data
+        req(input$file) # gets an annoying error to go away
+        #get the data available for use
+        df <- if(!is.null(input$file)){
+            as.data.frame(read.csv(input$file$datapath, stringsAsFactors = FALSE))
+        }
+        xNum <- if(!is.null(input$boxcox)){
+            as.numeric(input$boxcox) # turn the input into a number to help the subsetting
+        }
+        xCol <- df[, xNum] # pull first column from the input
+        df <- data.frame(xCol) # the variable as a data.frame
+
+        # transform the data
+        user_lambda <- as.numeric(input$lambda)
+        user_lambda <- round(user_lambda, digits = 4)
+        x_lamb <- box_cox(df[,1], lambda = user_lambda)
+
+        # perform the Shapiro-Wilk test
+        SW <- shapiro.test(x_lamb)
+        pVal <- SW$p.value
+        paste0("The p-value from the Shapiro-Wilk Test on the Box-Cox tranformed data is ", pVal)
+    })
 
     output$qqplotS <- renderPlot({
         # first, get first plot and clicking working
@@ -582,7 +625,7 @@ server <- function(input, output, session) {
         df <- data.frame(xCol) # the variable as a data.frame
 
         # do box-cox transformation
-        lambda <- input$lambda
+        lambda <- as.numeric(input$lambda)
         x_lamb <- box_cox(df[,1], lambda = lambda)
 
         # create CLICKABLE qqplot
@@ -612,7 +655,7 @@ server <- function(input, output, session) {
         df <- data.frame(xCol) # the variable as a data.frame
 
         # do box-cox transformation
-        lambda <- input$lambda
+        lambda <- as.numeric(input$lambda)
         x_lamb <- box_cox(df[,1], lambda = lambda)
 
         # filter by clicked point
@@ -628,20 +671,11 @@ server <- function(input, output, session) {
         names(df3)[1] <- "x_j"
         names(df3)[2] <- "q_j"
         quantPlot <- ggplot(df3, aes(x = q_j, y = x_j)) + geom_point(size = 3) +
-            ggtitle("QQ-Plot of Transformed Data Minut Clicked Point")
+            ggtitle("QQ-Plot of Transformed Data Minus Clicked Point")
         quantPlot
 
     })
 
-
-    # output$distPlot <- renderPlot({
-    #     # generate bins based on input$bins from ui.R
-    #     x    <- faithful[, 2]
-    #     bins <- seq(min(x), max(x), length.out = input$bins + 1)
-    #
-    #     # draw the histogram with the specified number of bins
-    #     hist(x, breaks = bins, col = 'darkgray', border = 'white')
-    # })
 }
 
 # Run the application

@@ -46,10 +46,10 @@ prop_normal <- function(x){ # x is a column
   compVal <- 1.396/sqrt(n) # value to compare to, from textbook
 
   if(abs(prop1Adj) > compVal){
-    pass1 <- "Passed normalcy check based on proportion 1 standard deviation from the mean"
+    pass1 <- "Failed normalcy check based on proportion 1 standard deviation from the mean"
   }
   else{
-    pass1 <- "Failed normalcy check based on proportion 1 standard deviation from the mean"
+    pass1 <- "Passed normalcy check based on proportion 1 standard deviation from the mean"
   }
 
   prop2 <- count2 / n
@@ -58,10 +58,10 @@ prop_normal <- function(x){ # x is a column
   compVal2 <- 0.628/sqrt(n) # value to compare to, from textbook
 
   if(abs(prop2Adj) > compVal2){
-    pass2 <- "Passed normalcy check based on proportion 2 standard deviations from the mean"
+    pass2 <- "Failed normalcy check based on proportion 2 standard deviations from the mean"
   }
   else{
-    pass2 <- "Failed normalcy check based on proportion 2 standard deviations from the mean"
+    pass2 <- "Passed normalcy check based on proportion 2 standard deviations from the mean"
   }
 
   endList <- list(pass1 = pass1, pass2 = pass2, lower.bound1 = intervalLB,

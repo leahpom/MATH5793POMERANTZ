@@ -25,13 +25,15 @@ A chi-square plot for the selected column of data
 
 A table showing the standardized z-values for each column, where the displayed rows are from user input
 
+An updated chi-square plot for the selected column of data where points greater than the upper fifth quantile are colored red
+
 A plot showing the scatterplot and marginal dotplots for the user-selected columns of data
 
 A plot showing the l(\eqn{\lambda}) vs. \eqn{\lambda} to help the user select a good \eqn{\lambda} value
 
 A QQ-plot of the Box-Cox transformed data, which is clickable
 
-A QQ-plot for the Box-Cox transformed data, calcualted having dropped the clicked point from the previous graph
+A QQ-plot for the Box-Cox transformed data, calculated having dropped the clicked point from the previous graph
 }
 \description{
 The user uploads a multivariate data set with at least two continuous variables, and it \emph{must}

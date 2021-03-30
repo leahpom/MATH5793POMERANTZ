@@ -15,6 +15,7 @@ cor_coefqq <- function(x){ # x is a column of a data frame
   # get x-bar
   # make sure x is in the right format
   x <- as.matrix(x)
+  x <- sort(x)
   n <- nrow(x)
   xbar <- mean(x)
 
@@ -29,17 +30,13 @@ cor_coefqq <- function(x){ # x is a column of a data frame
   xixb <- x - xbar
   qiqb <- qi - qbar
 
-  numi <- rep(0, n) # empty vector to store the values
-
-  for (i in 1:n) {
-    numi[i] <- xixb[i] * qiqb[i]
-  }
+  numi <- xixb * qiqb
 
   numerator <- sum(numi) # final value for the numerator
 
   # calculate denominator
-  denom1 <- sqrt(t(xixb) %*% xixb)
-  denom2 <- sqrt(t(qiqb) %*% qiqb)
+  denom1 <- sqrt(sum(xixb * xixb))
+  denom2 <- sqrt(sum(qiqb * qiqb))
 
   # calcualte r_q
 

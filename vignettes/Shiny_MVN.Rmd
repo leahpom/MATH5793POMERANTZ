@@ -1,0 +1,169 @@
+---
+title: "Shiny_MVN"
+output: 
+  prettydoc::html_pretty:
+    theme: hpstr
+    highlight: github
+    math: katex
+    df_print: paged
+    toc: yes
+    toc_depth: 4
+vignette: >
+  %\VignetteIndexEntry{Shiny_MVN}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(MATH5793POMERANTZ)
+```
+
+# Purpose
+
+The purpose of this vignette is to give a more detailed description of what my app is, what it does, what the theory behind it is, and how to run the app.
+
+# App Input
+
+The app takes several forms of input from the user. The direct inputs are:
+
+1. The .csv file of data
+1. The column number of the varaible for a proportion test for normality
+1. The column number of the variable for QQ-Plot and Shapiro-Wilk Test
+1. The column number of the first variable for Bivariate normality check
+1. The column number of the second variable for Bivariate normality check
+1. The alpha value for Bivariate normality check
+1. The consecutive rows of the Generalized Distances table, separated by a comma
+1. The consecutive rows of the Standardized Values table, separated by a comma
+1. The range of lambda values for the Box-Cox transformation, separated by a comma
+1. The specific lambda value for the Box-Cox transformation, up to four decimal places
+1. The column number of the variable for the Box-Cox Evaluation
+
+
+# App Output
+
+The app has several plot, text, and table outputs: 
+
+1. A table A table showing the first six entries of the uploaded data set
+1. A dotplot showing the selected column of data, colored by whether or not the observations are within one standard deviation of the mean
+1. A dotplot showing the selected column of data, colored by whether or not the observations are within two standard deviations of the mean
+1. A scatterplot that is the QQ-plot for the selected column of data
+1. A table that contains the correlation coefficient for each column
+1. A scatterplot showing the ellipse containing approximately $1-\alpha$ of the data, where $\alpha$ is based on user input.
+1. A table showing the generalized distances and critical value for the selected column of data, where the displayed rows are from user input
+1. A chi-square plot for the selected column of data
+1. A table showing the standardized z-values for each column, where the displayed rows are from user input
+1. A plot showing the scatterplot and marginal dotplots for the user-selected columns of data
+1. An updated chi-square plot for the selected column of data where points greater than the upper fifth quantile are colored red
+1. A plot showing the $l(\lambda)$ vs. $\lambda$ to help the user select a good $\lambda$ value
+1. A QQ-plot of the Box-Cox transformed data, which is clickable
+1. A QQ-plot for the Box-Cox transformed data, calculated having dropped the clicked point from the previous graph
+
+# Theory and Tasks
+
+The overall purpose behind the app is performing several normality checks on the data, based on user input.
+
+## Task 1
+
+### Output
+
+The output associated with Task 1 is:
+
+1. A dotplot showing the selected column of data, colored by whether or not the observations are within one standard deviation of the mean
+1. A dotplot showing the selected column of data, colored by whether or not the observations are within two standard deviations of the mean
+
+### Theory
+
+The theory behind these plots is outlined in the textbook. The point is to look for potential outliers in the data by seeing how much of the data is within 1 and 2 standard deviations of the mean. We know from the Empirical Rule that approximately 68% of the data should lie within 1 standard deviation of the mean, and approximately 95% should lie within 2 standard deviations of the mean. If less than those proportions lie in the interval formed by $\bar x_i \pm c*\sqrt{s_{ii}}$ where c is equal to 1 or 2, then we have evidence that the data are not normally distributed. In that situation, it is likely that the data are distributed with thicker tails.
+
+## Task 2
+
+### Output
+
+The output associated with Task 2 is:
+
+1. A scatterplot that is the QQ-plot for the selected column of data
+1. A table that contains the correlation coefficient for each column
+
+### Theory
+
+The theory is also outlined in the book. The QQ-Plot is done by ordering the observations, calculating the probability levels, and then calculating the standard normal quantiles. The QQ-Plot is then the plot of the ordered observations against the standard normal quantiles. The data should lie in an approximately straight line. To help the user decide if they think they data meets the normality check, the p-value of the Shapiro-Wilk test is also reported. It's worth noting that, when we use the Shapiro-Wilk test, our null hypothesis is that the data *are* distributed normally. Thus, we want a larger p-value because we want to fail to reject our null hypothesis and conclude that our data are normally distributed.
+
+The correlation coefficients that are reported are, essentially, the "straightness" of the QQ-plot. They give us an idea of whether we should think that our normality assumption is violated or not. We reject the normality assumption of the $r_q$ values are below a particular value, based on the number of observations and the significance level we choose to use.
+
+## Task 3
+
+### Output
+
+The output associated with Task 3 is:
+
+1. A scatterplot showing the ellipse containing approximately $1-\alpha$ of the data, where $\alpha$ is based on user input.
+1. A table showing the generalized distances and critical value for the selected column of data, where the displayed rows are from user input
+1. A chi-square plot for the selected column of data
+
+### Theory
+
+The theory behind this output is also described in the textbook. These are bivariate normality checks. The scatterplot showing the ellipse is based on Result 4.7, which states that approximately $1 - \alpha$ of the data lies in the ellipse given by ${\text{all } x \text{ such that} \bf{(x - \mu)' \Sigma^{-1} (x - \mu) \le \chi_p^2(\alpha) }}$. Specifically, we expect roughly 50% of the sample observations should lie in the ellipse given by the equation ${\text{all } x \text{ such that} \bf{(x - \bar x)' S^{-1} (x - \bar x) \le \chi_2^2(0.5) }}$. If this is not true, we have reason to suspect that our normality assumption is violated.
+
+Similarly, the table and the plot show a slightly more formal way of checking normality, which is that squared distances, $d_j ^2 = \bf{(x_j - \bar x)' S^{-1} (x_j - \bar x)}$ for j = 1,2,...,n, should behave like a $\chi^2$ random variable. So we plot them as if they were, ordering the distances from smallest to largest and calculating the associated quantiles $q_{c,p}((j - \frac{1}{2})/n) = \chi^2_p(j - \frac{1}{2})/n)$ and plotting the pairs $(q_{c,p}((j - \frac{1}{2})/n), d_j ^2)$. The critical value that the generalized distances are being compared to is $(q_{c,p}(\alpha)$. This helps us see which values are in vs outside of the ellipse.
+
+## Task 4
+
+### Output
+
+The output associated with Task 4 is:
+
+1. A table showing the standardized z-values for each column, where the displayed rows are from user input
+1. A plot showing the scatterplot and marginal dotplots for the user-selected columns of data
+1. An updated chi-square plot for the selected column of data where points greater than the upper fifth quantile are colored red
+
+### Theory
+
+The steps followed in Task 4 are the ones outlined on page 189 of the textbook:
+
+1. Make a dot plot for each variable.
+1. Make a scatterplot for each pair of variables.
+1. Calculate the standardized values $z_{jk} = (x_{jk} - \bar x_{jk})/ \sqrt{s_{kk}}$ for j = 1,2,...,n and each column k = 1,2,...,p. Examine these standardized values for large or small values
+1. Calculate the generalized squared distances $(\bf x_{jk} - \bar x_{jk})' S^{-1} (x_{jk} - \bar x_{jk}))$. Examine these distances for unusually large values. In a chi-square plot, these would be the points farthest from the origin.
+
+The table shows us the standardized z-values to look for large or small values, the scatterplot and marginal dotplots show us the first two entries of the outlined steps, and the updated chi-square plot gives us a way to see about how many points are a "significant" distance from the origin. Depending on the number of observations, the number of points that far from the origin gives us a way to check normality.
+
+## Task 5
+
+### Output
+
+The output associated with Task 5 is:
+
+1. A plot showing the $l(\lambda)$ vs. $\lambda$ to help the user select a good $\lambda$ value
+1. A QQ-plot of the Box-Cox transformed data, which is clickable
+1. A QQ-plot for the Box-Cox transformed data, calculated having dropped the clicked point from the previous graph
+
+### Theory
+
+The theory behind this is the Box-Cox transformation. This is a specific type of power transformation, using the formula:
+
+$$
+x^{(\lambda)} = 
+\begin{cases}
+  \frac{x^{\lambda} - 1}{\lambda} \ \ \lambda \ne 0 \\
+  \ln(x) \ \ \lambda = 0
+\end{cases}
+$$
+
+The user gets a plot showing $l(\lambda)$ vs. $\lambda$ in the user-entered range, with a red dot showing the value $l(\lambda)$ for their selected $\lambda$ input. This helps the user figure out an appropriate $l(\lambda)$. $l(\lambda)$ is the function
+
+$$
+l(\lambda) = -\frac{n}{2} \ln \bigg[ \frac{1}{n} \sum_{j = 1}^{n} (x^{(\lambda)}_j - \bar{x^{(\lambda)}})^2 \bigg] + (\lambda - 1) \sum_{j=1}^n \ln{x_j}
+$$
+
+The QQ-Plot helps the user see how well the Box-Cox transformation has transformed the data and the clickable aspect means that the user can also see how dropping observations that may be outliers (possibly from those determined in Task 4) can make the QQ-Plot more normal.
+
+# Running the app
+
+
