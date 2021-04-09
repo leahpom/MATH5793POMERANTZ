@@ -1,0 +1,1012 @@
+---
+title: "Project1"
+output: 
+  prettydoc::html_pretty:
+    theme: hpstr
+    highlight: github
+    math: katex
+    df_print: paged
+    toc: yes
+    toc_depth: 4
+vignette: >
+  %\VignetteIndexEntry{Project1}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(MATH5793POMERANTZ)
+library(dplyr)
+```
+
+# Description of Project
+
+This project is essentially a recreation of the analysis found in Example 5.11 on pages 244-247 of our book *Applied Multivariate Statistical Analysis*, 6th Edition, by Johnson and Wichern. While I will mostly be repeating analysis, I will also be creating new functions as described in the instructions, and these will be documented and also added to this package.
+
+# The Data
+
+The data are from Table 5.9 on page 245 of the textbook. The variables measured are: 
+1. $X_1$ = Voltage (volts)
+1. $X_2$ = Current (amps)
+1. $X_3$ = Feed speed(in/min)
+1. $X_4$ = (inert) Gas flow (cfm)
+
+```{r}
+weld <- read.table("/Users/leahpomerantz/Desktop/Math\ 5793/Data/T5-9.dat")
+colnames(weld) <- c("Voltage", "Current", "FeedSpeed", "GasFlow")
+weld <- data.frame(weld)
+knitr::kable(head(weld), caption = "Overview of Weld Data")
+```
+
+We can see an overview of the data above. We now will proceed to doing the analysis as outlined in the problem and the project instructions.
+
+# Checks for normality
+
+First, we want to do a normality check on our data.
+
+## Untransformed Data
+
+We'll start with doing our normality checks for the untransformed data. The book skips this step and goes straight to using a logarithmic transformation.
+
+### Univariate Checks
+
+#### Proportion Check
+
+The first univariate check is to test what proportion of the data is within one and two standard deviations of the mean. We can do this using the function we wrote for the last assignment on Multivariate Normality for the Shiny app.
+
+##### $X_1$
+
+First, we want to check what proportion is within one standard deviation, then within two standard deviations, of the mean.
+
+```{r}
+test <- prop_normal(weld[,1]) # store text for passing or not
+df <- dplyr::mutate(weld, inInterval = dplyr::between(weld[,1], test$lower.bound1, test$upper.bound1))
+textTest1 <- test$pass1
+
+pTop1a <- ggplot2::ggplot(df, ggplot2::aes(x = df[,1], color = inInterval)) +
+  ggplot2::geom_dotplot(fill = "white", binwidth = 0.05) + ggplot2::xlab(latex2exp::TeX(r'($X_1$)')) +
+  ggplot2::ggtitle("Normality Proportion Test - 1 SD") + 
+  ggplot2::labs(caption = textTest1) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+```
+
+And now, we do the same thing for two standard deviations
+
+```{r}
+df1 <- dplyr::mutate(weld, inInterval = dplyr::between(weld[,1], test$lower.bound2, test$upper.bound2))
+textTest2 <- test$pass2
+
+pTop1b <- ggplot2::ggplot(df1, ggplot2::aes(x = df1[,1], color = inInterval)) +
+  ggplot2::geom_dotplot(fill = "white", binwidth = 0.05) + ggplot2::xlab(latex2exp::TeX(r'($X_1$)')) +
+  ggplot2::ggtitle("Normality Proportion Test - 2 SD") + 
+  ggplot2::labs(caption = textTest2) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+```
+
+And now we can look at our results, shown below:
+
+```{r}
+gridExtra::grid.arrange(pTop1a, pTop1b, nrow = 2)
+```
+
+
+##### $X_2$
+
+We again start with the proportion within one standard deviation from the mean. Since I use the exact same code, just with the appropriate variables changed, I used echo = FALSE so the document doesn't become overcrowded.
+
+```{r, echo=FALSE}
+test2 <- prop_normal(weld[,2]) # store text for passing or not
+df2a <- dplyr::mutate(weld, inInterval = dplyr::between(weld[,2], test2$lower.bound1, test2$upper.bound1))
+textTest1 <- test2$pass1
+
+pTop2a <- ggplot2::ggplot(df2a, ggplot2::aes(x = df2a[,2], color = inInterval)) +
+  ggplot2::geom_dotplot(fill = "white", binwidth = 0.75) + ggplot2::xlab(latex2exp::TeX(r'($X_2$)')) +
+  ggplot2::ggtitle("Normality Proportion Test - 1 SD") + 
+  ggplot2::labs(caption = textTest1) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+#pTop2a
+```
+
+
+```{r, echo=FALSE}
+test2 <- prop_normal(weld[,2]) # store text for passing or not
+df2b <- dplyr::mutate(weld, inInterval = dplyr::between(weld[,2], test2$lower.bound2, test2$upper.bound2))
+textTest2 <- test2$pass2
+
+pTop2b <- ggplot2::ggplot(df2b, ggplot2::aes(x = df2b[,2], color = inInterval)) +
+  ggplot2::geom_dotplot(fill = "white", binwidth = 0.75) + ggplot2::xlab(latex2exp::TeX(r'($X_2$)')) +
+  ggplot2::ggtitle("Normality Proportion Test - 2 SD") + 
+  ggplot2::labs(caption = textTest2) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+#pTop2b
+```
+
+And we then arrange and display our graphs as shown below:
+
+```{r, echo=FALSE}
+gridExtra::grid.arrange(pTop2a, pTop2b, nrow = 2)
+```
+
+##### $X_3$
+
+We'll just be repeating the process done above, but this time for the $X_3$ variable
+
+```{r, echo=FALSE}
+# do third test
+test3 <- prop_normal(weld[,3]) 
+
+# create graph for what's in the first interval
+df3a <- dplyr::mutate(weld, inInterval = dplyr::between(weld[,3], test3$lower.bound1, test3$upper.bound1))
+textTest3a <- test3$pass1
+
+pTop3a <- ggplot2::ggplot(df3a, ggplot2::aes(x = df3a[,3], color = inInterval)) +
+  ggplot2::geom_dotplot(fill = "white", binwidth = 0.1) + ggplot2::xlab(latex2exp::TeX(r'($X_3$)')) +
+  ggplot2::ggtitle("Normality Proportion Test - 1 SD") + 
+  ggplot2::labs(caption = textTest3a) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+
+# create graph for what is in the second interval
+df3b <- dplyr::mutate(weld, inInterval = dplyr::between(weld[,3], test3$lower.bound2, test3$upper.bound2))
+textTest3b <- test3$pass2
+
+pTop3b <- ggplot2::ggplot(df3b, ggplot2::aes(x = df3b[,3], color = inInterval)) +
+  ggplot2::geom_dotplot(fill = "white", binwidth = 0.1) + ggplot2::xlab(latex2exp::TeX(r'($X_3$)')) +
+  ggplot2::ggtitle("Normality Proportion Test - 2 SD") + 
+  ggplot2::labs(caption = textTest3b) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+
+# display both graphs
+gridExtra::grid.arrange(pTop3a, pTop3b, nrow = 2)
+```
+
+And we can see from the output above that it passes the normalcy proportion test for both one and two standard deviations from the mean.
+
+##### $X_4$
+
+```{r, echo=FALSE}
+# do third test
+test4 <- prop_normal(weld[,4]) 
+
+# create graph for what's in the first interval
+df4a <- dplyr::mutate(weld, inInterval = dplyr::between(weld[,4], test4$lower.bound1, test4$upper.bound1))
+textTest4a <- test4$pass1
+
+pTop4a <- ggplot2::ggplot(df4a, ggplot2::aes(x = df4a[,4], color = inInterval)) +
+  ggplot2::geom_dotplot(fill = "white", binwidth = 0.07) + ggplot2::xlab(latex2exp::TeX(r'($X_4$)')) +
+  ggplot2::ggtitle("Normality Proportion Test - 1 SD") + 
+  ggplot2::labs(caption = textTest4a) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+
+# create graph for what is in the second interval
+df4b <- dplyr::mutate(weld, inInterval = dplyr::between(weld[,4], test4$lower.bound2, test4$upper.bound2))
+textTest4b <- test4$pass2
+
+pTop4b <- ggplot2::ggplot(df4b, ggplot2::aes(x = df4b[,4], color = inInterval)) +
+  ggplot2::geom_dotplot(fill = "white", binwidth = 0.07) + ggplot2::xlab(latex2exp::TeX(r'($X_4$)')) +
+  ggplot2::ggtitle("Normality Proportion Test - 2 SD") + 
+  ggplot2::labs(caption = textTest4b) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+
+# display both graphs
+gridExtra::grid.arrange(pTop4a, pTop4b, nrow = 2)
+```
+
+We can see from the plots above that $X_4$ also passes the normality proportion test.
+
+#### QQ-Plots, Correlation Coefficients, and Shapiro Wilk
+
+We'll now do a QQ-Plot for each variable and display the correlation coefficients (the slope, essentially) for each QQ-Plot. From Table 4.2 in the textbook, using the standard $\alpha = 0.05$, the value that we are comparing the correlation coefficient to is 0.9726.
+
+##### $X_1$
+
+```{r}
+r1 <- round(cor_coefqq(weld[,1]), 4) # the correlation coefficient
+r1Cap <- paste("The correlation coefficient is", r1, sep = " ") # caption to put below image
+SW1 <- shapiro.test(weld[,1])
+pVal1 <- round(SW1$p.value, 4)
+SW1Cap <- paste("The p-value from the Shapiro-Wilk test is", pVal1, sep = " ") # caption for Shapiro-Wilk
+# calculate and then plot the QQ-Plot
+quant <- q_quantiles(weld[,1])
+df1 <- data.frame(cbind(quant$orderedObs, quant$stndNormQuant))
+names(df1)[1] <- "x_j"
+names(df1)[2] <- "q_j"
+quantPlot1 <- ggplot2::ggplot(df1, ggplot2::aes(x = q_j, y = x_j)) + ggplot2::geom_point() +
+  ggplot2::ggtitle(latex2exp::TeX(r'($ QQ-Plot X_1$)')) + 
+  ggplot2::labs(caption = paste(r1Cap, SW1Cap, sep = "\n")) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 12))
+quantPlot1
+```
+
+We see from our QQ-plot, the correlation coefficient, and the p-value from the Shapiro-Wilk test that the assumption that univariate distribution is normally distributed is a valid assumption.
+
+##### $X_2$
+
+```{r, echo=FALSE}
+r2 <- round(cor_coefqq(weld[,2]), 4) # the correlation coefficient
+r2Cap <- paste("The correlation coefficient is", r2, sep = " ") # caption to put below image
+SW2 <- shapiro.test(weld[,2])
+pVal2 <- round(SW2$p.value, 4)
+SW2Cap <- paste("The p-value from the Shapiro-Wilk test is", pVal2, sep = " ") # caption for Shapiro-Wilk
+# calculate and then plot the QQ-Plot
+quant <- q_quantiles(weld[,2])
+df2 <- data.frame(cbind(quant$orderedObs, quant$stndNormQuant))
+names(df2)[1] <- "x_j"
+names(df2)[2] <- "q_j"
+quantPlot2 <- ggplot2::ggplot(df2, ggplot2::aes(x = q_j, y = x_j)) + ggplot2::geom_point() +
+  ggplot2::ggtitle(latex2exp::TeX(r'($ QQ-Plot X_2$)')) + 
+  ggplot2::labs(caption = paste(r2Cap, SW2Cap, sep = "\n")) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 12))
+quantPlot2
+```
+
+As in the previous graph, we see from our QQ-plot, the correlation coefficient, and the p-value from the Shapiro-Wilk test that the assumption that univariate distribution is normally distributed is a valid assumption.
+
+##### $X_3$
+
+```{r, echo=FALSE}
+r3 <- round(cor_coefqq(weld[,3]), 4) # the correlation coefficient
+r3Cap <- paste("The correlation coefficient is", r3, sep = " ") # caption to put below image
+SW3 <- shapiro.test(weld[,3])
+pVal3 <- round(SW3$p.value, 4)
+SW3Cap <- paste("The p-value from the Shapiro-Wilk test is", pVal3, sep = " ") # caption for Shapiro-Wilk
+# calculate and then plot the QQ-Plot
+quant <- q_quantiles(weld[,3])
+df3 <- data.frame(cbind(quant$orderedObs, quant$stndNormQuant))
+names(df3)[1] <- "x_j"
+names(df3)[2] <- "q_j"
+quantPlot3 <- ggplot2::ggplot(df3, ggplot2::aes(x = q_j, y = x_j)) + ggplot2::geom_point() +
+  ggplot2::ggtitle(latex2exp::TeX(r'($ QQ-Plot X_3$)')) + 
+  ggplot2::labs(caption = paste(r3Cap, SW3Cap, sep = "\n")) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 12))
+quantPlot3
+```
+
+If we use the standard $\alpha = 0.05$, then we still do not have evidence from the Shapiro-Wilk test against our assumption that the data are normally distributed. That being said, the QQ-Plot does look a little funny, *but* our correlation coefficient is also pretty high (greater than 0.9726). So we do seem to have reasonable evidence that our assumption of a normal distribution for the data is reasonable.
+
+##### $X_4$
+
+```{r, echo=FALSE}
+r4 <- round(cor_coefqq(weld[,4]), 4) # the correlation coefficient
+r4Cap <- paste("The correlation coefficient is", r4, sep = " ") # caption to put below image
+SW4 <- shapiro.test(weld[,4])
+pVal4 <- round(SW4$p.value, 4)
+SW4Cap <- paste("The p-value from the Shapiro-Wilk test is", pVal4, sep = " ") # caption for Shapiro-Wilk
+# calculate and then plot the QQ-Plot
+quant <- q_quantiles(weld[,4])
+df4 <- data.frame(cbind(quant$orderedObs, quant$stndNormQuant))
+names(df4)[1] <- "x_j"
+names(df4)[2] <- "q_j"
+quantPlot4 <- ggplot2::ggplot(df4, ggplot2::aes(x = q_j, y = x_j)) + ggplot2::geom_point() +
+  ggplot2::ggtitle(latex2exp::TeX(r'($ QQ-Plot X_4$)')) + 
+  ggplot2::labs(caption = paste(r4Cap, SW4Cap, sep = "\n")) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 12))
+quantPlot4
+```
+
+From our above QQ-plot and the p-value from the Shapiro-Wilk test, we have evidence that $X_4$, Gas Flow, is not normally distributed. The p-value for the Shapiro-Wilk test is quite small, meaning that we do have evidence against our assumption that $X_4$ is normally distributed, and, while the correlation coefficient is still quite large, it is less than 0.9726. I would interpret the results as evidence against our normality assumption.
+
+### Bivariate Checks
+
+The bivariate checks that I'm going to do are drawing the 50% contour map and calculating the generalized distance.
+
+Since we have four variables, and this is a bivarate check, we have a total of six graphs: $(X_1, X_2)$, $(X_1, X_3)$, $(X_1, X_4)$, $(X_2, X_3)$, $(X_2, X_4)$, and $(X_3, X_4)$. These graphs are all below
+
+##### $(X_1, X_2)$
+
+```{r, echo=FALSE}
+# general calculations
+df <- data.frame(cbind(weld[,1], weld[,2])) # the data frame
+xBar1 <- colMeans(df)
+S <- cov(df)
+x0 <- xBar1[1]
+y0 <- xBar1[2]
+eigenS <- eigen(S)
+lambda1 <- eigenS$values[1]
+lambda2 <- eigenS$values[2]
+
+# calculations for graph and graph
+cSq <- qchisq(0.5, 2, lower.tail = FALSE)
+axis1 <- sqrt(cSq) * sqrt(lambda1)
+axis2 <- sqrt(cSq) * sqrt(lambda2)
+theta <- acos(eigenS$vectors[1,1])
+
+g <- ggplot2::ggplot(data = df, ggplot2::aes(x = df[,1], y = df[,2])) +
+  ggplot2::geom_point() + ggplot2::xlab("x1") + ggplot2::ylab("x2") +
+  ggplot2::ggtitle("Ellipse containing approximately 50% of the data") +
+  ggforce::geom_ellipse(ggplot2::aes(x0 = x0, y0 = y0, a = axis1, b = axis2, angle = theta))
+g
+
+
+# calculations for table and table for generalized distance
+gd <- rep(0, nrow(df)) # create a vector to hold the generalized distances
+for (i in 1:nrow(df)) {
+  xi <- df[i,] # the observation
+  di <- as.matrix((xi - xBar1)) # the observation minus the mean
+  gd[i] <- di %*% solve(S) %*% t(di) # the generalized distance
+}
+
+# bind all the information together into one data frame to output as a table
+critValCol <- rep(cSq, nrow(df)) # create a vector for the critical value to be used as a column
+obsNum <- 1:nrow(df)
+comparison <- (gd <= cSq)
+df2 <- data.frame(cbind(obsNum, gd, critValCol, comparison))
+namesdf2 <- c("Observation Number", "Generalized Distance", "Critical Value", "Comparison") # store the names
+
+# organize all the information into a table
+tab <- dplyr::as_tibble(df2)
+colnames(tab) <- namesdf2
+DT::datatable(head(tab, n = nrow(tab)), options = list(pageLength = 5)) 
+```
+
+We can see from the ellipse and from the output in the table that exactly 50% of the observations lie within the ellipse that is supposed to contain 50% of the data, so this is evidence that this bivariate distribution is distributed normally.
+
+##### $(X_1, X_3)$
+
+```{r, echo=FALSE}
+# general calculations
+df <- data.frame(cbind(weld[,1], weld[,3])) # the data frame
+xBar1 <- colMeans(df)
+S <- cov(df)
+x0 <- xBar1[1]
+y0 <- xBar1[2]
+eigenS <- eigen(S)
+lambda1 <- eigenS$values[1]
+lambda2 <- eigenS$values[2]
+
+# calculations for graph and graph
+cSq <- qchisq(0.5, 2, lower.tail = FALSE)
+axis1 <- sqrt(cSq) * sqrt(lambda1)
+axis2 <- sqrt(cSq) * sqrt(lambda2)
+theta <- acos(eigenS$vectors[1,1])
+
+g <- ggplot2::ggplot(data = df, ggplot2::aes(x = df[,1], y = df[,2])) +
+  ggplot2::geom_point() + ggplot2::xlab("x1") + ggplot2::ylab("x3") +
+  ggplot2::ggtitle("Ellipse containing approximately 50% of the data") +
+  ggforce::geom_ellipse(ggplot2::aes(x0 = x0, y0 = y0, a = axis1, b = axis2, angle = theta))
+g
+
+
+# calculations for table and table for generalized distance
+gd <- rep(0, nrow(df)) # create a vector to hold the generalized distances
+for (i in 1:nrow(df)) {
+  xi <- df[i,] # the observation
+  di <- as.matrix((xi - xBar1)) # the observation minus the mean
+  gd[i] <- di %*% solve(S) %*% t(di) # the generalized distance
+}
+
+# bind all the information together into one data frame to output as a table
+critValCol <- rep(cSq, nrow(df)) # create a vector for the critical value to be used as a column
+obsNum <- 1:nrow(df)
+comparison <- (gd <= cSq)
+df2 <- data.frame(cbind(obsNum, gd, critValCol, comparison))
+namesdf2 <- c("Observation Number", "Generalized Distance", "Critical Value", "Comparison") # store the names
+
+# organize all the information into a table
+tab <- dplyr::as_tibble(df2)
+colnames(tab) <- namesdf2
+DT::datatable(head(tab, n = nrow(tab)), options = list(pageLength = 5)) 
+```
+
+We again see that the ellipse contains exactly 50% of the data, as shown by looking at it and the table output, so we have evidence for this being a normal bivariate distribution
+
+##### $(X_1, X_4)$
+
+```{r, echo=FALSE}
+# general calculations
+df <- data.frame(cbind(weld[,1], weld[,4])) # the data frame
+xBar1 <- colMeans(df)
+S <- cov(df)
+x0 <- xBar1[1]
+y0 <- xBar1[2]
+eigenS <- eigen(S)
+lambda1 <- eigenS$values[1]
+lambda2 <- eigenS$values[2]
+
+# calculations for graph and graph
+cSq <- qchisq(0.5, 2, lower.tail = FALSE)
+axis1 <- sqrt(cSq) * sqrt(lambda1)
+axis2 <- sqrt(cSq) * sqrt(lambda2)
+theta <- acos(eigenS$vectors[1,1])
+
+g <- ggplot2::ggplot(data = df, ggplot2::aes(x = df[,1], y = df[,2])) +
+  ggplot2::geom_point() + ggplot2::xlab("x1") + ggplot2::ylab("x4") +
+  ggplot2::ggtitle("Ellipse containing approximately 50% of the data") +
+  ggforce::geom_ellipse(ggplot2::aes(x0 = x0, y0 = y0, a = axis1, b = axis2, angle = theta))
+g
+
+
+# calculations for table and table for generalized distance
+gd <- rep(0, nrow(df)) # create a vector to hold the generalized distances
+for (i in 1:nrow(df)) {
+  xi <- df[i,] # the observation
+  di <- as.matrix((xi - xBar1)) # the observation minus the mean
+  gd[i] <- di %*% solve(S) %*% t(di) # the generalized distance
+}
+
+# bind all the information together into one data frame to output as a table
+critValCol <- rep(cSq, nrow(df)) # create a vector for the critical value to be used as a column
+obsNum <- 1:nrow(df)
+comparison <- (gd <= cSq)
+df2 <- data.frame(cbind(obsNum, gd, critValCol, comparison))
+namesdf2 <- c("Observation Number", "Generalized Distance", "Critical Value", "Comparison") # store the names
+
+# organize all the information into a table
+tab <- dplyr::as_tibble(df2)
+colnames(tab) <- namesdf2
+DT::datatable(head(tab, n = nrow(tab)), options = list(pageLength = 5)) 
+```
+
+We see that the ellipse contains 19/40 of the observations, which is approximately 50%. So we have evidence that this is a bivariate normal distribution.
+
+##### $(X_2, X_3)$
+
+```{r, echo=FALSE}
+# general calculations
+df <- data.frame(cbind(weld[,2], weld[,3])) # the data frame
+xBar1 <- colMeans(df)
+S <- cov(df)
+x0 <- xBar1[1]
+y0 <- xBar1[2]
+eigenS <- eigen(S)
+lambda1 <- eigenS$values[1]
+lambda2 <- eigenS$values[2]
+
+# calculations for graph and graph
+cSq <- qchisq(0.5, 2, lower.tail = FALSE)
+axis1 <- sqrt(cSq) * sqrt(lambda1)
+axis2 <- sqrt(cSq) * sqrt(lambda2)
+theta <- acos(eigenS$vectors[1,1])
+
+g <- ggplot2::ggplot(data = df, ggplot2::aes(x = df[,1], y = df[,2])) +
+  ggplot2::geom_point() + ggplot2::xlab("x2") + ggplot2::ylab("x3") +
+  ggplot2::ggtitle("Ellipse containing approximately 50% of the data") +
+  ggforce::geom_ellipse(ggplot2::aes(x0 = x0, y0 = y0, a = axis1, b = axis2, angle = theta))
+g
+
+
+# calculations for table and table for generalized distance
+gd <- rep(0, nrow(df)) # create a vector to hold the generalized distances
+for (i in 1:nrow(df)) {
+  xi <- df[i,] # the observation
+  di <- as.matrix((xi - xBar1)) # the observation minus the mean
+  gd[i] <- di %*% solve(S) %*% t(di) # the generalized distance
+}
+
+# bind all the information together into one data frame to output as a table
+critValCol <- rep(cSq, nrow(df)) # create a vector for the critical value to be used as a column
+obsNum <- 1:nrow(df)
+comparison <- (gd <= cSq)
+df2 <- data.frame(cbind(obsNum, gd, critValCol, comparison))
+namesdf2 <- c("Observation Number", "Generalized Distance", "Critical Value", "Comparison") # store the names
+
+# organize all the information into a table
+tab <- dplyr::as_tibble(df2)
+colnames(tab) <- namesdf2
+DT::datatable(head(tab, n = nrow(tab)), options = list(pageLength = 5)) 
+```
+
+We can see from the output above that the ellipse contains 18/40 observations, which is pretty close to 50%. Since this is a sample, it won't be exact. This is reasonable evidence that the data are bivariate normally distributed. We will get a more exact result later when we do the $\chi^2$ QQ Plots.
+
+##### $(X_2, X_4)$
+
+```{r, echo=FALSE}
+# general calculations
+df <- data.frame(cbind(weld[,2], weld[,4])) # the data frame
+xBar1 <- colMeans(df)
+S <- cov(df)
+x0 <- xBar1[1]
+y0 <- xBar1[2]
+eigenS <- eigen(S)
+lambda1 <- eigenS$values[1]
+lambda2 <- eigenS$values[2]
+
+# calculations for graph and graph
+cSq <- qchisq(0.5, 2, lower.tail = FALSE)
+axis1 <- sqrt(cSq) * sqrt(lambda1)
+axis2 <- sqrt(cSq) * sqrt(lambda2)
+theta <- acos(eigenS$vectors[1,1])
+
+g <- ggplot2::ggplot(data = df, ggplot2::aes(x = df[,1], y = df[,2])) +
+  ggplot2::geom_point() + ggplot2::xlab("x2") + ggplot2::ylab("x4") +
+  ggplot2::ggtitle("Ellipse containing approximately 50% of the data") +
+  ggforce::geom_ellipse(ggplot2::aes(x0 = x0, y0 = y0, a = axis1, b = axis2, angle = theta))
+g
+
+
+# calculations for table and table for generalized distance
+gd <- rep(0, nrow(df)) # create a vector to hold the generalized distances
+for (i in 1:nrow(df)) {
+  xi <- df[i,] # the observation
+  di <- as.matrix((xi - xBar1)) # the observation minus the mean
+  gd[i] <- di %*% solve(S) %*% t(di) # the generalized distance
+}
+
+# bind all the information together into one data frame to output as a table
+critValCol <- rep(cSq, nrow(df)) # create a vector for the critical value to be used as a column
+obsNum <- 1:nrow(df)
+comparison <- (gd <= cSq)
+df2 <- data.frame(cbind(obsNum, gd, critValCol, comparison))
+namesdf2 <- c("Observation Number", "Generalized Distance", "Critical Value", "Comparison") # store the names
+
+# organize all the information into a table
+tab <- dplyr::as_tibble(df2)
+colnames(tab) <- namesdf2
+DT::datatable(head(tab, n = nrow(tab)), options = list(pageLength = 5)) 
+```
+
+We can see from our output above that the ellipse contains 23/40 of the observations, which is, again, pretty close to 50% for the fact that this is an imprecise way to check for bivariate normality. We seem to have evidence that the data have a bivariate normal distribution.
+
+##### $(X_3, X_4)$
+
+```{r, echo=FALSE}
+# general calculations
+df <- data.frame(cbind(weld[,3], weld[,4])) # the data frame
+xBar1 <- colMeans(df)
+S <- cov(df)
+x0 <- xBar1[1]
+y0 <- xBar1[2]
+eigenS <- eigen(S)
+lambda1 <- eigenS$values[1]
+lambda2 <- eigenS$values[2]
+
+# calculations for graph and graph
+cSq <- qchisq(0.5, 2, lower.tail = FALSE)
+axis1 <- sqrt(cSq) * sqrt(lambda1)
+axis2 <- sqrt(cSq) * sqrt(lambda2)
+theta <- acos(eigenS$vectors[1,1])
+
+g <- ggplot2::ggplot(data = df, ggplot2::aes(x = df[,1], y = df[,2])) +
+  ggplot2::geom_point() + ggplot2::xlab("x3") + ggplot2::ylab("x4") +
+  ggplot2::ggtitle("Ellipse containing approximately 50% of the data") +
+  ggforce::geom_ellipse(ggplot2::aes(x0 = x0, y0 = y0, a = axis1, b = axis2, angle = theta))
+g
+
+
+# calculations for table and table for generalized distance
+gd <- rep(0, nrow(df)) # create a vector to hold the generalized distances
+for (i in 1:nrow(df)) {
+  xi <- df[i,] # the observation
+  di <- as.matrix((xi - xBar1)) # the observation minus the mean
+  gd[i] <- di %*% solve(S) %*% t(di) # the generalized distance
+}
+
+# bind all the information together into one data frame to output as a table
+critValCol <- rep(cSq, nrow(df)) # create a vector for the critical value to be used as a column
+obsNum <- 1:nrow(df)
+comparison <- (gd <= cSq)
+df2 <- data.frame(cbind(obsNum, gd, critValCol, comparison))
+namesdf2 <- c("Observation Number", "Generalized Distance", "Critical Value", "Comparison") # store the names
+
+# organize all the information into a table
+tab <- dplyr::as_tibble(df2)
+colnames(tab) <- namesdf2
+DT::datatable(head(tab, n = nrow(tab)), options = list(pageLength = 5)) 
+```
+
+We can see from our table that the ellipse contains 21/40 of the observations, which is about 50% of them, so we have evidence that the data have a bivariate normal distribution.
+
+### $\chi^2$ QQ Plot
+
+We have the same combination of variables for the $\chi^2$ QQ Plots as we did for the other bivariate normality checks.
+
+#### $(X_1, X_2)$
+
+```{r}
+df <- data.frame(cbind(weld[,1], weld[,2])) # the data frame
+chisq <- chi_sqQ(df)
+q <- chisq$q_j
+dsq <- chisq$d_jsq
+df.chisq <- data.frame(cbind(q, dsq))
+g <- ggplot2::ggplot(data = df.chisq, ggplot2::aes(x = q, y = dsq)) +
+            ggplot2::geom_point(color = "#427110") + ggplot2::ggtitle("Chi-Square Plot")
+g
+```
+
+The data seem to lie in a reasonably straight line, although it looks possible that there is a slight curve at the very top. I think the argument can be made for bivariate normality.
+
+#### $(X_1, X_3)$
+
+```{r, echo=FALSE}
+df <- data.frame(cbind(weld[,1], weld[,3])) # the data frame
+chisq <- chi_sqQ(df)
+q <- chisq$q_j
+dsq <- chisq$d_jsq
+df.chisq <- data.frame(cbind(q, dsq))
+g <- ggplot2::ggplot(data = df.chisq, ggplot2::aes(x = q, y = dsq)) +
+            ggplot2::geom_point(color = "647142") + ggplot2::ggtitle("Chi-Square Plot")
+g
+```
+
+The data appear to lie in a relatively straight line, which is evidence of a bivariate normal distribution.
+
+#### $(X_1, X_4)$
+
+```{r, echo=FALSE}
+df <- data.frame(cbind(weld[,1], weld[,4])) # the data frame
+chisq <- chi_sqQ(df)
+q <- chisq$q_j
+dsq <- chisq$d_jsq
+df.chisq <- data.frame(cbind(q, dsq))
+g <- ggplot2::ggplot(data = df.chisq, ggplot2::aes(x = q, y = dsq)) +
+            ggplot2::geom_point(color = "110970") + ggplot2::ggtitle("Chi-Square Plot")
+g
+```
+
+This data appears to lie relatively straight, but does have a slight curve to it. It may have a bivariate normal distribution, but a transformation may also be appropriate.
+
+#### $(X_2, X_3)$
+
+```{r, echo=FALSE}
+df <- data.frame(cbind(weld[,2], weld[,3])) # the data frame
+chisq <- chi_sqQ(df)
+q <- chisq$q_j
+dsq <- chisq$d_jsq
+df.chisq <- data.frame(cbind(q, dsq))
+g <- ggplot2::ggplot(data = df.chisq, ggplot2::aes(x = q, y = dsq)) +
+            ggplot2::geom_point(color = "219916") + ggplot2::ggtitle("Chi-Square Plot")
+g
+```
+
+These data also appear to have a slightly curved distribution. It looks like a transformation would be appropriate here.
+
+#### $(X_2, X_4)$
+
+```{r, echo=FALSE}
+df <- data.frame(cbind(weld[,2], weld[,4])) # the data frame
+chisq <- chi_sqQ(df)
+q <- chisq$q_j
+dsq <- chisq$d_jsq
+df.chisq <- data.frame(cbind(q, dsq))
+g <- ggplot2::ggplot(data = df.chisq, ggplot2::aes(x = q, y = dsq)) +
+            ggplot2::geom_point(color = "273552") + ggplot2::ggtitle("Chi-Square Plot")
+g
+```
+
+These data do appear to lie in a relatively straight line, but it also looks like there is an outlier at the very top. So there is evidence of a bivariate normal distribution, but there is also evidence of at least one outlier.
+
+#### $(X_3, X_4)$
+
+```{r, echo=FALSE}
+df <- data.frame(cbind(weld[,3], weld[,4])) # the data frame
+chisq <- chi_sqQ(df)
+q <- chisq$q_j
+dsq <- chisq$d_jsq
+df.chisq <- data.frame(cbind(q, dsq))
+g <- ggplot2::ggplot(data = df.chisq, ggplot2::aes(x = q, y = dsq)) +
+            ggplot2::geom_point(color = "049853") + ggplot2::ggtitle("Chi-Square Plot")
+g
+```
+
+These data lie in less of a straight line and there is evidence of outliers here. There is some evidence of bivariate normality, but a transformation may also be appropriate.
+
+### Conclusions
+
+We see from our results that the variables $X_1, X_2, X_3, \text{ and } X_4$ pass the proportions test for the proportion of data within one and two standard deviations of the mean. Only $X_1, X_2, \text{ and } X_3$ pass the normalcy checks using a QQ-plot and the Shapiro-Wilk test. $X_4$ does not. From the bivariate normality checks, all of the combinations pass. From the $\chi^2$ QQ Plots, it looks like several of the combinations have a curve to them. This gives us some evidence that a transformation is appropriate, taking all of this evidence into consideration.
+
+## Natural Logarithm Transformation
+
+First, we need to do the natural log transformation of the data.
+
+```{r}
+weldln <- data.frame(cbind(weld[,1:3], log(weld[,4])))
+colnames(weldln) <- c("Voltage", "Current", "FeedSpeed", "ln(GasFlow)")
+knitr::kable(head(weldln), caption = "Overview of Transformed Weld Data")
+```
+
+Now we will repeat our steps from above for the transformed data.
+
+### Univariate Checks
+
+#### Proportion Check
+
+The first univariate check is to test what proportion of the data is within one and two standard deviations of the mean. The only variable that has been changed is the last, so that is the only one we will consider.
+
+##### $ln(X_4)$
+
+```{r, echo=FALSE}
+test4 <- prop_normal(weldln[,4]) 
+
+# create graph for what's in the first interval
+df4a <- dplyr::mutate(weldln, inInterval = dplyr::between(weldln[,4], test4$lower.bound1, test4$upper.bound1))
+textTest4a <- test4$pass1
+
+pTop4a <- ggplot2::ggplot(df4a, ggplot2::aes(x = df4a[,4], color = inInterval)) +
+  ggplot2::geom_dotplot(fill = "white", binwidth = 0.0013) + ggplot2::xlab(latex2exp::TeX(r'($ln(X_4)$)')) +
+  ggplot2::ggtitle("Normality Proportion Test - 1 SD") + 
+  ggplot2::labs(caption = textTest4a) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+
+# create graph for what is in the second interval
+df4b <- dplyr::mutate(weldln, inInterval = dplyr::between(weldln[,4], test4$lower.bound2, test4$upper.bound2))
+textTest4b <- test4$pass2
+
+pTop4b <- ggplot2::ggplot(df4b, ggplot2::aes(x = df4b[,4], color = inInterval)) +
+  ggplot2::geom_dotplot(fill = "white", binwidth = 0.0013) + ggplot2::xlab(latex2exp::TeX(r'($ln(X_3)$)')) +
+  ggplot2::ggtitle("Normality Proportion Test - 2 SD") + 
+  ggplot2::labs(caption = textTest4b) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 10))
+
+# display both graphs
+gridExtra::grid.arrange(pTop4a, pTop4b, nrow = 2)
+```
+
+We see that it does pass the normalcy check based on the proportion of data one and two standard deviations from the mean.
+
+#### QQ-Plots and Correlation Coefficients
+
+Again, the only variable that has been transformed is the fourth, so it is the only one we will consider.
+
+##### $ln(X_4)$
+
+```{r, echo=FALSE}
+r4 <- round(cor_coefqq(weldln[,4]), 4) # the correlation coefficient
+r4Cap <- paste("The correlation coefficient is", r4, sep = " ") # caption to put below image
+SW4 <- shapiro.test(weldln[,4])
+pVal4 <- round(SW4$p.value, 4)
+SW4Cap <- paste("The p-value from the Shapiro-Wilk test is", pVal4, sep = " ") # caption for Shapiro-Wilk
+# calculate and then plot the QQ-Plot
+quant <- q_quantiles(weldln[,4])
+df4 <- data.frame(cbind(quant$orderedObs, quant$stndNormQuant))
+names(df4)[1] <- "x_j"
+names(df4)[2] <- "q_j"
+quantPlot4 <- ggplot2::ggplot(df4, ggplot2::aes(x = q_j, y = x_j)) + ggplot2::geom_point() +
+  ggplot2::ggtitle(latex2exp::TeX(r'($ QQ-Plot ln(X_4)$)')) + 
+  ggplot2::labs(caption = paste(r4Cap, SW4Cap, sep = "\n")) + 
+  ggplot2::theme(plot.caption = ggplot2::element_text(hjust = 0, size = 12))
+quantPlot4
+```
+
+Similarly to the untransformed case, this actually still fails the normality check. Since it passed the previous one and failed this one, it's a little iffy as to whether or not we can objectively say that our normality assumption is met. But it fails the Shapiro-Wilk test and the correlation coefficient is below 0.9726.
+
+### Bivariate Checks
+
+Only the bivariate cases with $X_4$ will have been affected by the transformation, so those are the only ones we consider.
+
+#### $(X_1, ln(X_4))$
+
+```{r, echo=FALSE}
+# general calculations
+df <- data.frame(cbind(weldln[,1], weldln[,4])) # the data frame
+xBar1 <- colMeans(df)
+S <- cov(df)
+x0 <- xBar1[1]
+y0 <- xBar1[2]
+eigenS <- eigen(S)
+lambda1 <- eigenS$values[1]
+lambda2 <- eigenS$values[2]
+
+# calculations for graph and graph
+cSq <- qchisq(0.5, 2, lower.tail = FALSE)
+axis1 <- sqrt(cSq) * sqrt(lambda1)
+axis2 <- sqrt(cSq) * sqrt(lambda2)
+theta <- acos(eigenS$vectors[1,1])
+
+g <- ggplot2::ggplot(data = df, ggplot2::aes(x = df[,1], y = df[,2])) +
+  ggplot2::geom_point() + ggplot2::xlab("x1") + ggplot2::ylab("ln(x4)") +
+  ggplot2::ggtitle("Ellipse containing approximately 50% of the data") +
+  ggforce::geom_ellipse(ggplot2::aes(x0 = x0, y0 = y0, a = axis1, b = axis2, angle = theta))
+g
+
+
+# calculations for table and table for generalized distance
+gd <- rep(0, nrow(df)) # create a vector to hold the generalized distances
+for (i in 1:nrow(df)) {
+  xi <- df[i,] # the observation
+  di <- as.matrix((xi - xBar1)) # the observation minus the mean
+  gd[i] <- di %*% solve(S) %*% t(di) # the generalized distance
+}
+
+# bind all the information together into one data frame to output as a table
+critValCol <- rep(cSq, nrow(df)) # create a vector for the critical value to be used as a column
+obsNum <- 1:nrow(df)
+comparison <- (gd <= cSq)
+df2 <- data.frame(cbind(obsNum, gd, critValCol, comparison))
+namesdf2 <- c("Observation Number", "Generalized Distance", "Critical Value", "Comparison") # store the names
+
+# organize all the information into a table
+tab <- dplyr::as_tibble(df2)
+colnames(tab) <- namesdf2
+DT::datatable(head(tab, n = nrow(tab)), options = list(pageLength = 5)) 
+```
+
+The ellipse contains 18/40 of the observations, based on the table, so it passes the bivariate normality check.
+
+#### $(X_2, X_4)$
+
+```{r, echo=FALSE}
+# general calculations
+df <- data.frame(cbind(weldln[,2], weldln[,4])) # the data frame
+xBar1 <- colMeans(df)
+S <- cov(df)
+x0 <- xBar1[1]
+y0 <- xBar1[2]
+eigenS <- eigen(S)
+lambda1 <- eigenS$values[1]
+lambda2 <- eigenS$values[2]
+
+# calculations for graph and graph
+cSq <- qchisq(0.5, 2, lower.tail = FALSE)
+axis1 <- sqrt(cSq) * sqrt(lambda1)
+axis2 <- sqrt(cSq) * sqrt(lambda2)
+theta <- acos(eigenS$vectors[1,1])
+
+g <- ggplot2::ggplot(data = df, ggplot2::aes(x = df[,1], y = df[,2])) +
+  ggplot2::geom_point() + ggplot2::xlab("ln(x1)") + ggplot2::ylab("ln(x2)") +
+  ggplot2::ggtitle("Ellipse containing approximately 50% of the data") +
+  ggforce::geom_ellipse(ggplot2::aes(x0 = x0, y0 = y0, a = axis1, b = axis2, angle = theta))
+g
+
+
+# calculations for table and table for generalized distance
+gd <- rep(0, nrow(df)) # create a vector to hold the generalized distances
+for (i in 1:nrow(df)) {
+  xi <- df[i,] # the observation
+  di <- as.matrix((xi - xBar1)) # the observation minus the mean
+  gd[i] <- di %*% solve(S) %*% t(di) # the generalized distance
+}
+
+# bind all the information together into one data frame to output as a table
+critValCol <- rep(cSq, nrow(df)) # create a vector for the critical value to be used as a column
+obsNum <- 1:nrow(df)
+comparison <- (gd <= cSq)
+df2 <- data.frame(cbind(obsNum, gd, critValCol, comparison))
+namesdf2 <- c("Observation Number", "Generalized Distance", "Critical Value", "Comparison") # store the names
+
+# organize all the information into a table
+tab <- dplyr::as_tibble(df2)
+colnames(tab) <- namesdf2
+DT::datatable(head(tab, n = nrow(tab)), options = list(pageLength = 5)) 
+```
+
+The ellipse contains 23/40, which is approximately 50%, so it passes the bivariate normality check.
+
+#### $(X_3, X_4)$
+
+```{r, echo=FALSE}
+# general calculations
+df <- data.frame(cbind(weldln[,3], weldln[,4])) # the data frame
+xBar1 <- colMeans(df)
+S <- cov(df)
+x0 <- xBar1[1]
+y0 <- xBar1[2]
+eigenS <- eigen(S)
+lambda1 <- eigenS$values[1]
+lambda2 <- eigenS$values[2]
+
+# calculations for graph and graph
+cSq <- qchisq(0.5, 2, lower.tail = FALSE)
+axis1 <- sqrt(cSq) * sqrt(lambda1)
+axis2 <- sqrt(cSq) * sqrt(lambda2)
+theta <- acos(eigenS$vectors[1,1])
+
+g <- ggplot2::ggplot(data = df, ggplot2::aes(x = df[,1], y = df[,2])) +
+  ggplot2::geom_point() + ggplot2::xlab("ln(x1)") + ggplot2::ylab("ln(x2)") +
+  ggplot2::ggtitle("Ellipse containing approximately 50% of the data") +
+  ggforce::geom_ellipse(ggplot2::aes(x0 = x0, y0 = y0, a = axis1, b = axis2, angle = theta))
+g
+
+
+# calculations for table and table for generalized distance
+gd <- rep(0, nrow(df)) # create a vector to hold the generalized distances
+for (i in 1:nrow(df)) {
+  xi <- df[i,] # the observation
+  di <- as.matrix((xi - xBar1)) # the observation minus the mean
+  gd[i] <- di %*% solve(S) %*% t(di) # the generalized distance
+}
+
+# bind all the information together into one data frame to output as a table
+critValCol <- rep(cSq, nrow(df)) # create a vector for the critical value to be used as a column
+obsNum <- 1:nrow(df)
+comparison <- (gd <= cSq)
+df2 <- data.frame(cbind(obsNum, gd, critValCol, comparison))
+namesdf2 <- c("Observation Number", "Generalized Distance", "Critical Value", "Comparison") # store the names
+
+# organize all the information into a table
+tab <- dplyr::as_tibble(df2)
+colnames(tab) <- namesdf2
+DT::datatable(head(tab, n = nrow(tab)), options = list(pageLength = 5)) 
+```
+
+The ellipse contains 21/40 of the observations, which is approximately 50%, so it passes the bivariate normality check.
+
+### $\chi^2$ QQ Plot
+
+We again have the same combinations and wil only be considering those with $X_4$, since those are the only ones that will have changed.
+
+#### $(X_1, X_4)$
+
+```{r, echo=FALSE}
+df <- data.frame(cbind(weldln[,1], weldln[,4])) # the data frame
+chisq <- chi_sqQ(df)
+q <- chisq$q_j
+dsq <- chisq$d_jsq
+df.chisq <- data.frame(cbind(q, dsq))
+g <- ggplot2::ggplot(data = df.chisq, ggplot2::aes(x = q, y = dsq)) +
+            ggplot2::geom_point(color = "#184978") + ggplot2::ggtitle("Chi-Square Plot")
+g
+```
+
+This looks quite similar to our original, but with perhaps slightly less of a curve.
+
+#### $(X_2, X_4)$
+
+```{r, echo=FALSE}
+df <- data.frame(cbind(weldln[,2], weldln[,4])) # the data frame
+chisq <- chi_sqQ(df)
+q <- chisq$q_j
+dsq <- chisq$d_jsq
+df.chisq <- data.frame(cbind(q, dsq))
+g <- ggplot2::ggplot(data = df.chisq, ggplot2::aes(x = q, y = dsq)) +
+            ggplot2::geom_point(color = "#021742") + ggplot2::ggtitle("Chi-Square Plot")
+g
+```
+
+This also looks quite similar to the untransformed data. Perhaps a few outliers. But it could be argued that the normality assumption is met.
+
+#### $(X_3, X_4)$
+
+```{r, echo=FALSE}
+df <- data.frame(cbind(weldln[,3], weldln[,4])) # the data frame
+chisq <- chi_sqQ(df)
+q <- chisq$q_j
+dsq <- chisq$d_jsq
+df.chisq <- data.frame(cbind(q, dsq))
+g <- ggplot2::ggplot(data = df.chisq, ggplot2::aes(x = q, y = dsq)) +
+            ggplot2::geom_point(color = "#876324") + ggplot2::ggtitle("Chi-Square Plot")
+g
+```
+
+Once again, this looks quite similar to the untransformed data. Probably a few outliers. But it could be argued that the normality assumption is met.
+
+### Conclusions
+
+The transformed data, $\ln(X_4)$, still fails one of the univariate normality checks, since it has an odd QQ-Plot, the correlation coefficient is too low, and it fails the Shapiro-Wilk test. All of the intial bivariate normality checks are passed. The QQ-plots look pretty good. That being said, there isn't really a dramatic change between the transformed and untransformed data. I would perhaps try and do a Box-Cox transformation and see if that made things better. However, since the purpose of this project is to follow the example in the book, I'll refrain from doing additional transformations to the data and proceed with the outlined project.
+
+# Figure 5-9
+
+The function that I wrote to create this chart is called tsq_chart, and I use it below:
+
+```{r}
+tsq_chart(weldln)
+```
+
+As in the textbook, we see that, for the 95% level, observation 31 is out of control and, for the 99% level, none of the observations are out of control. This indicates that the machine is likely running well and there doesn't seem to be cause for concern.
+
+# Figure 5-10
+
+## $(X_1, ln(X_4))$
+
+```{r}
+g <- quality_ellipse(weldln, 1, 4, alpha = 0.01)
+g
+```
+
+
+# Figure 5-11
+
+The function I wrote to recreate this figure is the same basic one given to us for the introduction to Project 1. It's in my package as XbarCharts and I use it below:
+
+```{r}
+x <- weldln$`ln(GasFlow)`
+XbarCharts(x)
+```
+
+And we can see that the output is the same as in Figure 5.11. We see that observation 31 is outside the limits. This is fitting with what we observed earlier and the observation that there was likely an outlier. 
+
+# Conclusion
+
+We have a shift in the gas flow for observation 31. We also can see that it is masked at 99% limits and *almost* masked at 95% limits when we calculated our $T^2$ value. This shows us that we need to look at more than just the $T^2$ when assessing our data. Outside the realm of the textbook, I would also do some different transformations on the fourth variable. The argument that it is normally distributed after the logarithmic transformation is a tenuous one at best, so I would try a Box-Cox transformation to see if that makes things better.
+
+
+
+
+
+
+
