@@ -1003,10 +1003,3 @@ And we can see that the output is the same as in Figure 5.11. We see that observ
 # Conclusion
 
 We have a shift in the gas flow for observation 31. We also can see that it is masked at 99% limits and *almost* masked at 95% limits when we calculated our $T^2$ value. This shows us that we need to look at more than just the $T^2$ when assessing our data. Outside the realm of the textbook, I would also do some different transformations on the fourth variable. The argument that it is normally distributed after the logarithmic transformation is a tenuous one at best, so I would try a Box-Cox transformation to see if that makes things better.
-
-
-
-
-
-
-

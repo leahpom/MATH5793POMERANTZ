@@ -14,7 +14,6 @@
 #' @return a violin plot for the bootstrapped values for each e_ik, i,k = 1,2,...p, where p is the number of variables
 #' @return a list containing confidence intervals for each \eqn{\lambda[i]} and e_ik, i,k = 1,2,...p from bootstrapping, and confidence intervals for each \eqn{\lambda[i]} using the Anderson and Gerschick method
 #'
-#' @importFrom stats df
 #'
 #' @export
 #'
