@@ -29,6 +29,7 @@ Imports:
     ggExtra,
     gridExtra,
     DT,
-    latex2exp
+    latex2exp,
+    boot
 Depends: 
     R (>= 2.10)
