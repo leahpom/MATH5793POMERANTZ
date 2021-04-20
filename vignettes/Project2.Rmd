@@ -1,0 +1,105 @@
+---
+title: "Project2"
+output: 
+  prettydoc::html_pretty:
+    theme: hpstr
+    highlight: github
+    math: katex
+    df_print: paged
+    toc: yes
+    toc_depth: 4
+vignette: >
+  %\VignetteIndexEntry{Project2}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(MATH5793POMERANTZ)
+```
+
+# Purpose
+
+The purpose of this project is to go through Exercise 8.10 from page 473 of *Applied Multivariate Statistical Analysis*, 6th Edition, by Johnson and Wichern.
+
+# Problem 8.10
+
+There are four subparts to this problem. The functions that I made for this project, in accordance with the guidelines, are called bf_int() and pca_sigma(), and are already packaged.
+
+## (a) 
+
+To perform this analysis, I just have to load in the data into the vignette and use the pca_sigma() function that I made.
+
+```{r}
+stocks <- read.table("/Users/leahpomerantz/Desktop/Math\ 5793/Data/T8-5.DAT")
+stocks <- data.frame(stocks)
+colnames(stocks) <- c("JPMorgan", "Citibank", "WellsFargo", "RoyalDutchShell", "ExxonMobil")
+head(stocks)
+```
+
+Now that we've verified that we have the right data by looking at the first few entries, we can use the function:
+
+```{r}
+pca <- pca_sigma(stocks)
+pca$sample.Cov
+pca$PC.Sigma
+```
+
+The first matrix above shows us the sample covariance matrix for our stocks data, and the second matrix shows us the coefficients of the principle components. This means that we can write out the principle components using $\LaTeX$, as shown below:
+
+$$
+\begin{align}
+
+Y_1 & = e_1'X = 0.0389X_1 - 0.1053X_2 + 0.4924X_3 - 0.8631X_4 - 0.0091X_5 \\
+Y_2 & = e_2'X = -0.0711X_1 - 0.1298X_2 - 0.8644X_3 - 0.4803X_4 - 0.0147X_5 \\
+Y_3 & = e_3'X = -0.1879X_1 + 0.9610X_2 - 0.0458X_3 - 0.1532X_4 + 0.1250X_5 \\
+Y_4 & = e_4'X = 0.9771X_1 + 0.1714X_2 - 0.0910X_3 - 0.0297X_4 + 0.0817X_5 \\
+Y_5 & = e_5'X = -0.0577X_1 - 0.1386X_2 + 0.0050X_3 + 0.0067X_4 + 0.9886X_5
+
+\end{align}
+$$
+
+## (b) - DOUBLE CHECK WORDING
+
+Our function above calculates the total sample variance (TSV) for us. All we need to do is divide the first three eigenvalues by the TSV, as done below:
+
+```{r}
+eigenS <- eigen(pca$sample.Cov)
+lambda <- eigenS$values
+l1per <- lambda[1]/pca$TSV
+l2per <- lambda[2]/pca$TSV
+l3per <- lambda[3]/pca$TSV
+```
+
+From the work done above, we can see that the first principle component explains `r l1per` of total sample variance, the second principle component explains `r l2per` of the total sample variance, and the third principle component explains `r l3per` of the data. This means that the vast majority of the variation in the total variance in the data can be explained by the first principle component, with still a decent amount explained by the second, and then not very much explained by the third. I would also use a scree plot to look at all five principle components before making a definitive statement, but, I think that this is a good start to arguing that we can reduce the data to just the first two principle components.
+
+
+## (c)
+
+This one is also simply a matter of using the function I made, called bf_int. 
+
+```{r}
+bf_int(stocks, q = 3, alpha = 0.1)
+```
+
+
+## (d)
+
+I do believe that it can be summarized in fewer than five dimensions. Especially from what we saw in (b) and (c), I think we see a dramatic decrease in the explanatory power of the principle components between the second principle component and the third. The purpose of this project is to answer the questions as given, but, personally, I would prefer to do a scree plot and get a better visual. But, that being said, I think that, based on what we see in (b) alone, we've got evidence that we can use the principle components to reduce the data to only two dimensions. At the very least, we can certainly reduce it to three, given that the three components together explain 98.09% of the data. 
+
+
+
+
+
+
+
+
+
+
