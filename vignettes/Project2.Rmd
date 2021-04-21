@@ -66,7 +66,7 @@ Y_5 & = e_5'X = -0.0577X_1 - 0.1386X_2 + 0.0050X_3 + 0.0067X_4 + 0.9886X_5
 \end{align}
 $$
 
-## (b) - DOUBLE CHECK WORDING
+## (b)
 
 Our function above calculates the total sample variance (TSV) for us. All we need to do is divide the first three eigenvalues by the TSV, as done below:
 
