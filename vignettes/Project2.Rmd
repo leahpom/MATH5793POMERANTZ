@@ -54,17 +54,16 @@ pca$PC.Sigma
 
 The first matrix above shows us the sample covariance matrix for our stocks data, and the second matrix shows us the coefficients of the principle components. This means that we can write out the principle components using $\LaTeX$, as shown below:
 
-$$
-\begin{align}
+$Y_1 = e_1'X = 0.0389X_1 - 0.1053X_2 + 0.4924X_3 - 0.8631X_4 - 0.0091X_5$
 
-Y_1 & = e_1'X = 0.0389X_1 - 0.1053X_2 + 0.4924X_3 - 0.8631X_4 - 0.0091X_5 \\
-Y_2 & = e_2'X = -0.0711X_1 - 0.1298X_2 - 0.8644X_3 - 0.4803X_4 - 0.0147X_5 \\
-Y_3 & = e_3'X = -0.1879X_1 + 0.9610X_2 - 0.0458X_3 - 0.1532X_4 + 0.1250X_5 \\
-Y_4 & = e_4'X = 0.9771X_1 + 0.1714X_2 - 0.0910X_3 - 0.0297X_4 + 0.0817X_5 \\
-Y_5 & = e_5'X = -0.0577X_1 - 0.1386X_2 + 0.0050X_3 + 0.0067X_4 + 0.9886X_5
+$Y_2 = e_2'X = -0.0711X_1 - 0.1298X_2 - 0.8644X_3 - 0.4803X_4 - 0.0147X_5$
 
-\end{align}
-$$
+$Y_3 = e_3'X = -0.1879X_1 + 0.9610X_2 - 0.0458X_3 - 0.1532X_4 + 0.1250X_5$
+
+$Y_4 = e_4'X = 0.9771X_1 + 0.1714X_2 - 0.0910X_3 - 0.0297X_4 + 0.0817X_5$
+
+$Y_5 = e_5'X = -0.0577X_1 - 0.1386X_2 + 0.0050X_3 + 0.0067X_4 + 0.9886X_5$
+
 
 ## (b)
 
