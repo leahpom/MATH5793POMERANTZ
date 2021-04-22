@@ -38,7 +38,7 @@ There are four subparts to this problem. The functions that I made for this proj
 To perform this analysis, I just have to load in the data into the vignette and use the pca_sigma() function that I made.
 
 ```{r}
-stocks <- read.table("/Users/leahpomerantz/Desktop/Math\ 5793/Data/T8-5.DAT")
+stocks <- read.table("/Users/leahpomerantz/Desktop/Math\ 5793/Data/T8-4.DAT")
 stocks <- data.frame(stocks)
 colnames(stocks) <- c("JPMorgan", "Citibank", "WellsFargo", "RoyalDutchShell", "ExxonMobil")
 head(stocks)
@@ -54,15 +54,15 @@ pca$PC.Sigma
 
 The first matrix above shows us the sample covariance matrix for our stocks data, and the second matrix shows us the coefficients of the principle components. This means that we can write out the principle components using $\LaTeX$, as shown below:
 
-$\widehat{Y_1} = \hat{e_1}'X = 0.0389X_1 - 0.1053X_2 + 0.4924X_3 - 0.8631X_4 - 0.0091X_5$
+$\widehat{Y_1} = \hat{e_1}'X = 0.2228228X_1 + 0.3072900X_2 + 0.15481030X_3 + 0.6389680X_4 + 0.65090441X_5$
 
-$\widehat{Y_2} = \hat{e_2}'X = -0.0711X_1 - 0.1298X_2 - 0.8644X_3 - 0.4803X_4 - 0.0147X_5$
+$\widehat{Y_2} = \hat{e_2}'X = 0.6252260X_1 + 0.5703900X_2 + 0.34450492X_3 - 0.2479475X_4 - 0.32184779X_5$
 
-$\widehat{Y_3} = \hat{e_3}'X = -0.1879X_1 + 0.9610X_2 - 0.0458X_3 - 0.1532X_4 + 0.1250X_5$
+$\widehat{Y_3} = \hat{e_3}'X = 0.3261122X_1 - 0.2495901X_2 - 0.03763929X_3 - 0.6424974X_4 + 0.64586064X_5$
 
-$\widehat{Y_4} = \hat{e_4}'X = 0.9771X_1 + 0.1714X_2 - 0.0910X_3 - 0.0297X_4 + 0.0817X_5$
+$\widehat{Y_4} = \hat{e_4}'X = 0.6627590X_1 - 0.4140935X_2 - 0.49704993X_3 + 0.3088689X_4 - 0.21637575X_5$
 
-$\widehat{Y_5} = \hat{e_5}'X = -0.0577X_1 - 0.1386X_2 + 0.0050X_3 + 0.0067X_4 + 0.9886X_5$
+$\widehat{Y_5} = \hat{e_5}'X = 0.1176595X_1 - 0.5886080X_2 + 0.78030428X_3 + 0.1484555X_4 - 0.09371777X_5$
 
 
 ## (b)
@@ -91,7 +91,7 @@ bf_int(stocks, q = 3, alpha = 0.1)
 
 ## (d)
 
-I do believe that it can be summarized in fewer than five dimensions. Especially from what we saw in (b) and (c), I think we see a dramatic decrease in the explanatory power of the principle components between the second principle component and the third. The purpose of this project is to answer the questions as given, but, personally, I would prefer to do a scree plot and get a better visual. But, that being said, I think that, based on what we see in (b) alone, we've got evidence that we can use the principle components to reduce the data to only two dimensions. At the very least, we can certainly reduce it to three, given that the three components together explain 98.09% of the data. 
+I do believe that it can be summarized in fewer than five dimensions. Especially from what we saw in (b) and (c), I think we see a dramatic decrease in the explanatory power of the principle components between the second principle component and the third. The purpose of this project is to answer the questions as given, but, personally, I would prefer to do a scree plot and get a better visual. But, that being said, I think that, based on what we see in (b) alone, we've got evidence that we can use the principle components to reduce the data to only two dimensions. At the very least, we can certainly reduce it to three, given that the three components together explain 89.88% of the data. 
 
 
 
