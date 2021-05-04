@@ -1,0 +1,499 @@
+---
+title: "Project3"
+output: 
+  prettydoc::html_pretty:
+    theme: hpstr
+    highlight: github
+    math: katex
+    df_print: paged
+    toc: yes
+    toc_depth: 4
+vignette: >
+  %\VignetteIndexEntry{Project3}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(MATH5793POMERANTZ)
+```
+
+# Introduction to the Project
+
+For this project, we were given the freedom to do whatever statistical analysis we wanted from the book, and I chose to do the simultaneous confidence intervals for $\mu$ from chapter 5. I give a more detailed description further down, but an overall view as to what's new in my package for this project is:
+
+1. T2conf.ellipse(), which graphs the confidence interval for bivariate data (it takes input as to which two columns of the data), and then graphs dashed lines representing the $T^2$ interval onto the ellipse
+1. BFconf.ellipse(), which is similar to the above function, but graphs the Bonferroni intervals, but it has an option to add the $T^2$ intervals to the graph for comparison
+1. ci_T2(), which calculates the $T^2$ confidence intervals
+1. bfMean_int(), which calculates the Bonferroni intervals for $\mu$
+1. ciDiffMeans(), which calculates the $T^2$ intervals for the difference in means
+1. shiny_ci(), which calls the Shiny app I built for the project
+
+More detail on the functions and how they work is given in the documentation of the functions.
+
+# Statistical Problem
+
+The statistical problem I chose to examine is the gender wage gap. People commonly say that women make either 68 or 70 cents on the dollar to men, but this statistic is usually built without accounting for differences in experience, job type, education, etc. To accurately account for these things, I would build an MLR model. But, to follow up on it more generally, I want to see what the estimated difference in means is for women's salaries vs. men's salaries. There is an extensive literature in psychology, sociology, and labour economics on this topic, but I wanted to play around with some data and see what results I can get. I will go into more details in the theory section, but I will then build simultaneous confidence intervals for men's salaries and women's salaries, and the difference between men's and women's salaries.
+
+# Cleaning the Data
+
+The data that I use comes from the Wooldridge package in R. It is called cps91, and the first six entries are shown below:
+
+```{r}
+library(wooldridge)
+head(cps91)
+```
+
+It is data from the Current Population Survey from 1991, and more information can be found by loading the wooldridge packing into the workspace and typing ?cps91 in the console. For our purposes, there are a few important things to note:
+1. Our sample is limited to married women
+1. We have 5634 observations on 24 variables
+
+Since we are only looking at married women, we can compare the salary these married women earn (earns) with the salary their husbands earn (husearns). There are problems with this approach, which I will discuss in the Possible Improvements section. But, based on how we form simultaneous confidence intervals, it was necessary to find a data set that had separate measurements for men's salaries vs. women's salaries.
+
+Before proceeding with any analysis, the data needs to be cleaned up. To use the data in my Shiny app, I needed a .cvs extension. So I cleaned the data outside of my package and exported it to a .csv, but I will now walk through the steps I took to get my data cleaned up.
+
+First, I got rid of the binary variables. These would be really helpful to do a regression, but they aren't really relevant to the problem at hand. The exception is the variable inlf, which tracks whether or not a woman is in the labor force. So we keep it in the data to use later.
+
+```{r}
+library(dplyr)
+cps91_clean <- select(cps91, -c(husunion, husblck, hushisp, kidge6, black, hispanic, union, kidlt6))
+head(cps91_clean)
+```
+
+Next, we need to get rid of the NA's in the data. They will cause errors later on.
+
+```{r}
+cps91_clean <- na.omit(cps91_clean)
+head(cps91_clean)
+nrow(cps91_clean)
+```
+
+From the output above, we see that our number of observations is 3286. The original was 5634. So we have lost 2348 observations. This is also something that I address in the possible improvements section.
+
+Next, we need to make sure that our data is limited to women in the labor force. For some economic background, being "in the labor force" is **not** the same as being employed. However, the simple way to think of it is that it is those who are either employed or unemployed, where *unemployed* means they are actively seeking work. More details on how we define these terms in economics is available through the Bureau of Labor Statistics and the website is linked in my references section.
+
+Whether or not the woman is in the labor force is stored in the variable inlf, so we will filter our dataframe for inlf==1, which means the woman *is* in the labor force.
+
+```{r}
+cps91_clean <- filter(cps91_clean, inlf == 1)
+nrow(cps91_clean)
+```
+
+We see from our output above that we still have 3286 observations, which means that our sample was already limited to women in the labor force. Now that we have used the binary variable for what we needed it for, we should filter it our from our data set. We are looking at continuous variables for everything else, so having a binary/factor variable doesn't make sense for what we are aiming to do.
+
+```{r}
+cps91_clean <- select(cps91_clean, -c(inlf))
+```
+
+
+If we want to make sure we're only look at people who are actively earning wages, we can then filter so that the weekly earnings for both the men and women is not equal to zero
+
+```{r}
+cps91_clean <- filter(cps91_clean, husearns != 0)
+cps91_clean <- filter(cps91_clean, earns != 0)
+nrow(cps91_clean)
+```
+
+We are reduced again to only 2574 observations.
+
+Next, we create new columns with the natural logarithms we need - looking at husearns (husband's weekly earnings) and earns (wife's weekly earnings). Taking the natural log gives us helpful boundaries. This is what we'd need if we wanted to do a regression later, so it will be helpful to perform the analysis on both the transformed and untransformed data
+
+```{r}
+cps91_clean <- mutate(cps91_clean, "lnhusearns" = log(husearns), "lnearns" = log(earns))
+head(cps91_clean)
+```
+
+Just looking at the first few entries doesn't give us much of a clue as to what the results will be, which is why we need to do our analysis. But we can now write this cleaned and transformed data to a .csv for use in the project and shiny app, which I did using the write.csv() function. We now have our cleaned data to do the data analysis.
+
+# Necessary Theory
+
+The theory that I use in this section is from Chapter 5 of our textbook, *Applied Multivariate Statistical Analysis*, 6th Edition, by Johnson and Wichern.
+
+## Hotelling's $T^2$ 
+
+The motivation for the development of the $T^2$ statistic is that we want to be able to do hypothesis testing for the population means, i.e. test $H_0: \mu = \mu_0$ vs $H_a: \mu \ne \mu_0$. When doing unvariate statistics, or when only focusing on a single variable, we would use the t statistic,
+
+$$
+t = \frac{(\overline{X} - \mu_0)}{s/\sqrt{n}} \text{,  with  } \overline{X} = \frac{1}{n} \sum_{j=1}^{n}X_j 
+\text{  and  } s^2 = \frac{1}{n - 1} \sum_{j=1}^{n}(X_j - \overline{X})^2
+$$
+
+The t-statistic has the student's t-distribution with degrees of freedom n-1. If $|t|$ is greater than $t(\alpha/2)$, we reject our null hypothesis. This is equivalent to rejecting $H_0$ when 
+
+$$
+t^2 = \frac{(\overline{X} - \mu_0)^2}{s^2/n} = n(\overline{X} - \mu_0)(s^2)^{-1}(\overline{X} - \mu_0)
+$$
+
+is large. If we fail to reject $H_0$, then we accept $\mu_0$ as plausible. But these values are not the only plausible ones. There is a whole range of plausible values for $\mu_0$, and this is what we call a confidence interval for $\mu$.
+
+Since we are using the methods of classical statistics, it is worthwhile to remember that this interval is only a random interval *before* we sample. The theory that we use to build the interval (not covered in this section of the textbook), is based on resampling an infinite number of times. When we sample only once, our sample is fixed, and our interval is no longer random. We would need to use Bayesian methods if we wanted to form probability intervals.
+
+The theory above is for if we only have one variable, so $\mu$ and $\mu_0$ are scalar quantities. We have a simple analog for moving from the univariate to the multivariate case, which is $T^2$. It is often called Hotelling's $T^2$ in honor of Harold Hotelling. Our above equation becomes:
+
+$$
+T^2 = \bf (\overline{X} - \mu_0)' \bigg( \frac{1}{n}S \bigg)^{-1} (\overline{X} - \mu_0) = n(\overline{X} - \mu_0)'S^{-1}(\overline{X} - \mu_0)
+$$
+
+and it has the distribution given below:
+
+$$
+T^2 \text{ is distributed as } \frac{p(n-1)}{(n-p)}F_{p, n-p}
+$$
+
+This means that we reject our null hypothesis when our observed $T^2$ is greater than the critical $T^2$ based on a specific probability, $\alpha$. 
+
+## Confidence Regions
+
+We can extend our univariate confidence intervals to the multivariate idea of a confidence region. If we denote our confidence region as R(X) and say that $\theta$ is a vector of "unknown population parameters" (Johnson and Wichern, pg 220), then R(X) is (essentially) a set of plausible values for $\theta$. The more formal definition, found on page 220 of Johnson and Wichern is that R(X) is a confidence region if, before sampling, the following holds:
+
+$$
+P[R(X) \text{ will cover the true } \theta] = 1 - \alpha
+$$
+
+This means that a $100(1-\alpha) \%$ confidence region for the $p \times 1$ matrix $\mu$ is the ellipsoid from the equation:
+
+$$
+n (\bar{x} - \mu)'S^{-1}(\bar{x} - \mu) \le \frac{p(n-1)}{(n-p)}F_{p, n-p} (\alpha) \\
+\text{where  } \bar{x} = \frac{1}{n} \sum_{j=1}^nx_j ,\  S = \frac{1}{(n-1)} \sum_{j=1}^n (x_j - \bar{x})(x_j - \bar{x})' \text{  and  } x_1, x_2, ..., x_n \text{ are the sample observations}
+$$
+
+We determine whether a $\bf{\mu_0}$ is in the region by calculating $n \bf (\bar{x} - \mu_0)'S^{-1}(\bar{x} - \mu_0)$ and comparing it to $\frac{p(n-1)}{(n-p)}F_{p, n-p} (\alpha)$. If the squared distance is greater than $\frac{p(n-1)}{(n-p)}F_{p, n-p} (\alpha)$, then $\bf{\mu_0}$ is not in the region. This is equivalent to doing a hypothesis test for each $H_0:  \bf \mu = {\mu_0}$.
+
+**Note:** we are assuming that we have a multivariate normal distribution for our p-dimensions. We will address this assumption in the analysis to follow.
+
+The axes for this ellipsoid are:
+
+$$
+\pm \sqrt{\lambda_i} \sqrt{\frac{p(n-1)}{(n-p)}F_{p, n-p} (\alpha)}\bf{e_i}
+$$
+
+where $\lambda_i$ and $e_i$ are the eigenvalue and eigenvector pairs of $S$.
+
+## Simultaneous Confidence Intervals 
+
+We want to form confidence statements for our variables that will *all* hold true with confidence $1 - \alpha$. We can start by considering X, distributed $N_p(\mu, \Sigma)$. If we take the linear combination $\bf Z = a'X$, then we can use our results from previous chapters to see that $\mu_z = a'\mu$ and $\sigma^2_z = a'\Sigma a$ and by Result 4.2, $Z \sim N(a'\mu, a'\Sigma a)$. If we work from a random sample of our variables, then we have $Z_j = a'X_j$, $\bar{z} = \bf a'\bar{x}$ and $s^2 = \bf a'Sa$. We can then form 100(1-$\alpha$)% confidence intervals for $\bf a$ fixed and unknown $\sigma_z$ based on the student's $t^2$ distribution:
+
+$$
+a'\bar{x} - t_{n-1}(\alpha/2)\frac{\sqrt{a'Sa}}{\sqrt{n}} \le a'\mu \le a'\bar{x} +  t_{n-1}(\alpha/2)\frac{\sqrt{a'Sa}}{\sqrt{n}}
+$$
+
+But this doesn't hold at $\alpha$ for each statement. We want to get this collective, but it does come at the price of being less precise than the individual intervals. We can use similar logic to what we used when forming the confidence region to get that the simultaneous confidence region for $\bf a'\mu$ is those for which the following inequality holds:
+
+$$
+t^2 = \frac{n \bf(a'\bar{x} - a'\mu)^2}{\bf a'Sa} = \frac{n(\bf a'(\bar{x} - \mu))^2}{\bf a'Sa} \le t^2_{n-1}(\alpha/2)
+$$
+
+We can reasonably expect that the right hand side of the above inequality will instead be a larer value, which we can think of as $c^2$, when we are trying to form statements for many choices of $\bf a$.
+
+We can use the maximization lemma from the Cauchy-Schwartz inequality to derive teh following value for $c^2$:
+
+$$
+\text{max}_a \frac{n(\bf a'(\bar{x} - \mu))^2}{\bf a'Sa} = n \bigg[ \text{max}_a \frac{n(\bf a'(\bar{x} - \mu))^2}{\bf a'Sa} \bigg] = n(\bf \bar{x} - \mu)'S^{-1}(\bar{x} - \mu) = T^2
+$$
+
+note: the a above should be underneath the word max, but this was quite difficult to do.
+
+We then get the following confidence interval:
+
+$$
+\bigg( \bf{a' \overline{X}} - \sqrt{\frac{p(n-1)}{n(n-p)} F_{p, n-p}(\alpha)a'Sa}, \ \ \  \bf{a' \overline{X}} + \sqrt{\frac{p(n-1)}{n(n-p)} F_{p, n-p}(\alpha)a'Sa} \bigg)
+$$
+
+We can get simultaneous confidence intervals for each variable by choosing $a' = [1,0,0,...,0]$ up to $a' = [0,0,0,...,1]$. 
+
+### Difference in Means
+
+To get the difference in means $\mu_i - \mu_k$, we can use our above formula and simply choose $a' = [0,..., a_i, 0,...,0,a_k,0,...,0)$ with $a_i = 1, a_k = -1$. We then have to remember that $a'Sa = s_{ii} - 2s_{ik} + s_{kk}$
+
+## Bonferroni Intervals
+
+If we limit the number of variables that we want to take simultaneous confidence intervals for, then we can get better (narrower) intervals than the $T^2$ intervals we looked at earlier.
+
+The work done below primarily comes from page 232 of Johnson and Wichern.
+
+If we have to make confidence statements about m linear combinations, $a_1'\mu$, $a_2'\mu$, ..., $a_m'\mu$ before data are collected ,and we let $C_i$ denote a confidence statement about $\bf a_i\mu$, where $P[C_i \text{ is true} ] = 1 - \alpha_i$, where $i \in \{1, 2, ..., m \}$. Then we can get a special case of the Bonferroni inequality:
+
+$$
+P[\text{all } C_i \text{ true}] = 1 - P[\text{at least one } C_i \text{ false}] \\
+ \ge 1 - \sum_{i = 1} ^ m P(C_i \text{ false}) = 1 - \sum_{i = 1} ^ m (1 - P(C_i \text{ true})) \\
+ = 1 - (\alpha_1 + \alpha_2 + ... + \alpha_m)
+$$
+
+This gives us a helpful group error rate. This means we can keep the same overall error rate on our family of statements, while also controlling it for the more important vs. less important statements.
+
+Let's assume we don't know anything about the importance of any one statement and develop simultaneous confidence intervals. We'll start by looking at the individual t-intervals for $\mu_i$, where $\mu_i$ is a component of $\mu$.
+
+The interval for $\mu_i$ is the t-interval:
+
+$$
+\bar{x} \pm t_{n-1} \bigg( \frac{\alpha_i}{n} \bigg) \sqrt{\frac{s_{ii}}{n}}
+$$
+
+where i goes from 1 to m and $\alpha_i = \alpha/m$. We can use our above work to find that:
+
+$$
+P \bigg[ \overline{X}_i \pm t_{n-1} \bigg( \frac{\alpha}{2m} \bigg) \sqrt{\frac{s_{ii}}{n}} \text{ contains } \mu_i, \text{ all } i \bigg] \ge 1 - \bigg( \frac{\alpha}{m} + \frac{\alpha}{m} + ... + \frac{\alpha}{m} \bigg) \ \ \  (m \text{ terms}) \\
+ = 1 - \alpha
+$$
+
+
+# Analysis
+
+Given that we want to compare the mean salaries of men vs. women, we can calculate the following statistics:
+
+1. A $T^2$ confidence interval for $\mu_{men}$ 
+1. A $T^2$ confidence interval for $\mu_{women}$ 
+1. A Bonferroni confidence interval for $\mu_{men}$
+1. A Bonferroni confidence interval for $\mu_{women}$
+1. A $T^2$ confidence interval for $\mu_{men} - \mu_{women}$
+
+The $T^2$ confidence intervals and Bonferroni confidence intervals will be calculated together.
+
+Given that our data for the earnings are in dollars, we should do the analysis for both the raw dollars and for ln(wages). If we were to do further statistical analysis, like multiple linear regression, we would definitely need our dependent variable (wages) to be a natural log. This is because, for regression, we are essentially creating a "line" (plane, n-space) for our equation. In that case, it doesn't make sense to use wages because of the scaling. Our wages can't drop below zero, so taking the natural log prevents us from ending up with nonsensical output. Therefore, we should do both the regular wages and then the natural log of wages.
+
+One last point is the significance level. I did my analysis using the standard $\alpha = 0.05$. However, one of the benefits of the Shiny app, which I use later, is that the user can easily adjust the $\alpha$ level.
+
+## Normality Assumption
+
+As mentioned in the theory section, our confidence intervals use the assumption that our data is multivariate normal. We can do several checks of this, but we can also use the Central Limit Theorem. Since we have a large number of observations, over 2000, we have enough observations to justify using the normal approximation. However, it is worth noting the univariate distributions.
+
+As noted above, we want to use a natural logarithm transformation simply because it is much more realistic a scale when we are talking about wages and it is a common practice in economics. However, another good reason comes from looking at the QQ-Plots for the variables we are interested in.
+
+```{r}
+car::qqPlot(cps91_clean$husearns)
+car::qqPlot(cps91_clean$earns)
+```
+
+The QQ-plots for both of our untransformed variables of interest show some evidence of non-normality. It isn't worthwhile to do the Shapiro-Wilk test, as our number of observations will make the test incredibly sensitive to any departures form normality. However, we do see a possible justification for the data transformation that we performed. We can now look at the QQ-plots for the transformed variables:
+
+```{r}
+car::qqPlot(cps91_clean$lnhusearns)
+car::qqPlot(cps91_clean$lnearns)
+```
+
+The above QQ-plots, while not perfect, are still much better and much more normal than the untransformed data.
+
+It is also worthwhile to note that univariate non-normality does not always equate to bivariate or multivariate non-normality. But the lack of normality on our QQ plot is still a point to consider.
+
+## Wages
+
+### $T^2$ confidence intervals
+
+One of the new functions that I added to my package is ci_T2(), which will calculate the simultaneous $T^2$ intervals for each of the variables in our dataframe. Our data has been reduced to the continuous variables, and the function is run below:
+
+```{r}
+T2int <- ci_T2(data = cps91_clean)
+T2int
+```
+
+The variables we're interested in are husearns and earns. husearns is the second row and earns is the fifth row of the output. The interpretation of this is that we are 95% confident that the true underlying population mean for the weekly earnings of married men with wives who work is in the interval (`r T2int[2,1]`, `r T2int[2,2]`). We are also 95% confident that the true underlying population mean for the weekly earnings of working women with husbands is in the interval (`r T2int[5,1]`, `r T2int[5,2]`).
+
+One thing we can immediately notice is that, as suspected, women's average weekly earnings are **much** smaller than their husbands'. This gives us some evidence that men's average earnings are larger than women's. One point that we simply cannot ignore, and that will be discussed later in the conclusion/possible improvements section, is that we do have a very narrow sample. So we can say that we have evidence that women's average weekly earnings are **much** smaller than their husbands' for married, working women, without accounting for career differences.
+
+### Bonferroni confidence intervals
+
+As discussed in the theory section, we can form smaller confidence intervals with Bonferroni confidence intervals. These are calculated by a function I added to my package for this project, bfMean_int().
+
+```{r}
+Bfint <- bfMean_int(data = cps91_clean)
+Bfint
+```
+
+The interpretation of this is similar to that of the $T^2$ intervals above. We are 95% confident that the true underlying population mean for the weekly earnings of married men with wives who work is in the interval (`r Bfint[2,1]`, `r Bfint[2,2]`). We are also 95% (or more) confident that the true underlying population mean for the weekly earnings of working women with husbands is in the interval (`r Bfint[5,1]`, `r Bfint[5,2]`). This is again evidence that women's average weekly earnings are **much** smaller than their husbands'.
+
+### $T^2$ confidence interval for $\mu_{men} - \mu_{women}$
+
+We've discussed above that we have evidence that women's average weekly earnings are smaller than their husbands'. We can calculate the difference more exactly by doing a $T^2$ confidence interval for $\mu_{men} - \mu_{women}$. This is done by a function I built for this project, called ciDiffMeans(). Since we are doing $\mu_{men} - \mu_{women}$, $i = 2$ and $k = 5$.
+
+```{r}
+T2diff <- ciDiffMeans(data = cps91_clean, i = 2, k = 5)
+T2diff
+```
+
+The interpretation of this is that we are 95% confident that married men with working wives make approximately \$198.84 to about \$270.43 more per week than their wives do. This is a large difference. Considering that we estimated $\mu_{women}$ in our sample to be (`r T2int[5,1]`, `r T2int[5,2]`), This means that we have estimations that men are making between 50.02-78.13% more than their wives. We can use algebra to get this interval by realizing that the lower bound must be the smallest difference (`r T2diff[1,1]`) paired with the largest estimate for women's income (`r T2int[5,2]`), which is `r T2diff[1,1]/T2int[5,2]`. The upper bound must be the largest difference (`r T2diff[1,2]`) paired with the smallest estimate for women's income (`r T2int[5,1]`), which is `r T2diff[1,2]/T2int[5,1]`.This is a huge difference. 
+
+We can also measure the impact of the difference in terms of thinking about how the numbers would add up over time. While (`r T2diff[1,1]`, `r T2diff[1,2]`) per week does seem large to me, it may seem small to others. But, accounting for 52 weeks in a year, that adds up to a yearly difference of (`r 52*T2diff[1,1]`, `r 52*T2diff[1,2]`). That is a **huge** difference in yearly income. According to the U.S. Census Bureau, the median family income in the U.S. in 2019 was \$68,703. Back in 1991, when our data is from, the median family income in the U.S. was \$30,126, according to data from the Federal Reserve Bank of St. Lois. That is then a huge difference in yearly income.
+
+### Graphs
+
+The previous sections all calculate the simultaneous confidence intervals for our data. It can also help to visualize the data, which is what two of my new functions - T2conf.ellipse() and BFconf.ellipse() can do.
+
+#### $T^2$ Ellipse
+
+
+The ellipse in my functions is drawn using the equation given in the theory section and repeated below:
+
+$n (\bar{x} - \mu)'S^{-1}(\bar{x} - \mu) \le \frac{p(n-1)}{(n-p)}F_{p, n-p} (\alpha)$
+
+The dashed lines represents the $T^2$ interval.
+
+```{r}
+T2conf.ellipse(data = cps91_clean, col1 = 2, col2 = 5)
+```
+
+$\mu_1 = \mu_{men} \text{ and } \mu_2 = \mu_{women}$. We can see that our dashed lines "line up" with the $T^2$ interval that we calculated earlier. This gives us a helpful visual for what we are doing with our confidence interval.
+
+#### Bonferroni Ellipse
+
+As discussed in the theory section and seen in the results of the intervals above, the Bonferroni intervals are smaller than the $T^2$ intervals. We can see this by drawing the confidence ellipse from above and putting dashed lines for the Bonferroni intervals on it.
+
+```{r}
+BFconf.ellipse(data = cps91_clean, col1 = 2, col2 = 5)
+```
+
+We can now see a helpful visual of the fact that our Bonferroni intervals are smaller than the $T^2$ intervals.
+
+#### Comparison of intervals
+
+An even better visual is done by the same function I called above, BFconf.int(), but setting addT2 = TRUE to our function, which adds a dashed line for the $T^2$ interval
+
+```{r}
+BFconf.ellipse(data = cps91_clean, col1 = 2, col2 = 5, addT2 = TRUE)
+```
+
+The numbers that we used in our analysis are incredibly helpful for doing hypothesis testing and for understanding the difference in wages. But, in terms of visualizing the difference, and the difference in size of the intervals, I find this above graph very helpful.
+
+## Natural log of wages - Shiny App
+
+We are going to repeat the analysis that we did above, but, instead of just copying and pasting the code for the analysis, I'm also going to include pictures showing how we can do the exact same analysis using the Shiny app that I built. More details on how the app works can be found by loading the package and entering "?shiny_ci" into the console.
+
+Shiny doesn't work well with a .Rmd, which is why I chose to add pictures, since I can't demonstrate the app working in the document. To run the app, however, enter the command that is in the R chunk below. I set eval=FALSE so I could include it in the document. 
+
+```{r, eval=FALSE}
+shiny_ci()
+```
+
+
+To get the results from the app, which takes data in the form of a .csv, I saved the cleaned data (the process of cleaning is demonstrated above), and I used the command write.csv() to save it to the correct folder on my computer.
+
+As I mentioned under by section about the Normality assumption, a QQ-Plot of our data reveals that there is some evidence that the data are not normally distributed. We have so many observations that we should be alright using the Central Limit Theorem, but, in addition to what makes sense for the distribution of wages (e.g., cannot be zero), that is another good reason to use the natural logarithm.
+
+### $T^2$ confidence intervals
+
+To verify the results of my shiny app, I have also included the results of running the appropriate code (essentially, copying and pasting from above, just changing to the appropriate variables). However, since the $T^2$ interval calculates it for the entire dataset, we just need to pull the appropriate variables from above. Since lnhusearns is the 16th column and lnearns is the 17th column, we can just pull the 16th and 17th rows from T2int above.
+
+We are 95% confident that the true underlying value of the natural log of weekly wages for married men whose wives work is in the interval (`r T2int[16,1]`, `r T2int[16,2]`). This does not have as simple an interpretation as our work above and cannot be simply back-transformed. But, as mentioned earlier, this is perhaps still a better approach to have, though not as easy to interpret.
+
+We are also 95% confident that the true underlying value of the natural log of weekly wages for married women in the labor force is in the interval (`r T2int[17,1]`, `r T2int[17,2]`). Again, this does not have a simple interpretation, but is perhaps a more valid statistical approach for when we are examining wage data.
+
+The picture below is from the shiny app, and we can see that its results agree with what was calculated above.
+
+![T^2 Intervals](/Users/leahpomerantz/Desktop/Math\ 5793/Project\ 3/T2Int.png)
+
+### Bonferroni confidence intervals 
+
+Using the Bonferroni intervals, we are 95% confident that the true underlying value of the natural log of weekly wages for married men whose wives work is in the interval (`r Bfint[16,1]`, `r Bfint[16,2]`). Once again, this doesn't really have a simpler interpretation, but is arguably more appropriate
+
+We are also 95% confident that the true underlying value of the natural log of weekly wages for married women in the labor force is in the interval (`r Bfint[17,1]`, `r Bfint[17,2]`).
+
+We can look at our picture below from running the Shiny app and see that it agrees with the calculated output.
+
+```{r}
+img_path <- "/Users/leahpomerantz/Desktop/Math\ 5793/Project\ 3/bfInt.png"
+img <- png::readPNG(img_path, native = TRUE, info = TRUE)
+knitr::include_graphics(img_path)
+```
+
+
+### $T^2$ confidence interval for $\mu_{men} - \mu_{women}$
+
+Our interval can easily be calculated by the function we used before, ciDiffMeans:
+
+```{r}
+ciDiff <- ciDiffMeans(data = cps91_clean, i = 16, k = 17)
+ciDiff
+```
+
+Again, this isn't quite as easily interpreted. However, we can see that we again have a positive difference. This means that we are 95% confident that the natural log of weekly wages for men with wives in the labor force is between `r ciDiff[1,1]` and `r ciDiff[1,2]` higher than the natural log of their wives' weekly wages.
+
+This interval is also calculated by our shiny app, as seen in the picture below:
+
+```{r}
+img_path <- "/Users/leahpomerantz/Desktop/Math\ 5793/Project\ 3/diffInt.png"
+img <- png::readPNG(img_path, native = TRUE, info = TRUE)
+knitr::include_graphics(img_path)
+```
+
+
+### Graphs
+
+As before, a graph can help us understand the analysis. We can simply pull the pictures of our graphs that I took from my shiny app.
+
+#### $T^2$ Ellipse
+
+The $T^2$ Ellipse is calculated the same way as the ellipse in the prevoius section, using the T2conf.ellipse() function.
+
+```{r}
+img_path <- "/Users/leahpomerantz/Desktop/Math\ 5793/Project\ 3/T2ellipse.png"
+img <- png::readPNG(img_path, native = TRUE, info = TRUE)
+knitr::include_graphics(img_path)
+```
+
+This gives us a good visual representation of our confidence interval.
+
+#### Bonferroni Ellipse
+
+We can again look at the image generated by our shiny app, shown below:
+
+```{r}
+img_path <- "/Users/leahpomerantz/Desktop/Math\ 5793/Project\ 3/BFellipse.png"
+img <- png::readPNG(img_path, native = TRUE, info = TRUE)
+knitr::include_graphics(img_path)
+```
+
+We see again, visually, how the Bonferroni intervals are smaller than the $T^2$ intervals.
+
+#### Comparison of Intervals
+
+Looking at the picture from the shiny app below:
+
+```{r}
+img_path <- "/Users/leahpomerantz/Desktop/Math\ 5793/Project\ 3/twoEllipse.png"
+img <- png::readPNG(img_path, native = TRUE, info = TRUE)
+knitr::include_graphics(img_path)
+```
+
+And we can now see a good contrast of how much smaller the Bonferroni intervals are.
+
+# Conclusions
+
+We have strong statistical evidence that men who are married and whose wives work make a significant amount more in weekly wages than their wives do. This is hardly a surprising result, but it is interesting to take what we have learned in class and apply it to this problem. While it is an interesting result, there are several limitations/possible improvements to be made.
+
+## Possible Improvements
+
+We first need to note that we are not accounting for any difference in job, position, etc. The wage gap is widely studied in labour economics, and, when all of those different variables are accounted for, it does still exist, but it is much smaller. It would be interesting to be able to compare people within the same field or within the same position. For example, women are more likely to go into lower paying and more flexible occupations that they can take time off from, while men are more likely to go into higher-paying, technical fields.
+
+Secondly, the scope of our data is very limited. We are only looking at married men and women. It is quite likely that married households will make different career decisions, e.g., the wife may take a lower-paying job with fewer hours in order to be more available to children. We are also, due to the nature of the data, only looking at heteronormative couples. It is possible that non-traditional couples may follow different patterns and make different choices.
+
+All of the problems/possible improvements above would be able to be accounted for by doing a multivariate regression analysis. That isn't quite in the scope of our class for this semester, but it is still a project I would like to consider in the future.
+
+A final problem to consider, and one inherent to survey data, is that we had to get rid of our several NA observations. It is impossible to know if there was any pattern or group of people who were less likely to finish filling out the survey and if that would have an impact on our results. Because we still have thousands of observations, it is not something to worry much about, but is still worthwhile to consider.
+
+# References
+
+Below are the MLA citations for the sources I mentioned earlier.
+
+Bureau, US Census. “Income and Poverty in the United States: 2019.” The United States Census Bureau, The United States    Census Bureau, 15 Sept. 2020,www.census.gov/library/publications/2020/demo/p60-270.html#:~:text=Median%20household    %20income%20was%20%2468%2C703,and%20Table%20A%2D1). 
+
+Johnson, Richard  A, and Dean W Wichern. Applied Multivariate Statistical Analysis. 6th ed., Pearson Prentice Hall,     2007. 
+
+“Labor Force, Employment, Unemployment and Related Concepts.” U.S. Bureau of Labor Statistics, U.S. Bureau of Labor     Statistics, 27 Jan. 2021, www.bls.gov/cps/definitions.htm#:~:text=The%20labor%20force%20includes%20all,or%20actively   %20looking%20for%20work. 
+
+“Median Household Income in the United States.” FRED, Federal Reserve Bank of St. Lois, 16 Sept. 2020,  
+  fred.stlouisfed.org/series/MEHOINUSA646N. 
+
+
+
+
+
+
+
+
+
